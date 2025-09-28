@@ -1,0 +1,17 @@
+workspace:
+  projects:
+    - name: app_cs
+      dependsOn: [core_cpp]
+      startupTarget: app
+      targets:
+        - name: app
+          type: exec
+          language: cs
+          toolchain: csc
+          sources: ["src/**/*.cs"]
+          link: ["core_cpp:libcore"]
+          intDir: "${BUILD_DIR}/obj/app"
+          outDir: "${BUILD_DIR}/app"
+          bridges:
+            implements: ["{$CENTO_WORKSPACE_DIR}/idl/app/**/*.idl"]
+            uses: ["{$CENTO_WORKSPACE_DIR}/idl/core/**/*.idl"]

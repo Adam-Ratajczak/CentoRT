@@ -24,11 +24,6 @@ void ArgsResolver::resolve(int argc, char* argv[]) {
 	}
 
 	std::string path = args[1]; 
-	if (!std::filesystem::is_directory(path)) {
-		Log::LogError("Provided folder must be directory!");
-		return;
-	}
-
 	CommandDef currDef;
 	for (int i = 2; i < args.size(); i++) {
 		if (possibleNames.find(args[i]) != possibleNames.end()) {
@@ -86,10 +81,9 @@ void ArgsResolver::display_help() {
 	Log::LogInfo("help:\t\tDisplays this text");
 }
 
-void ArgsResolver::resolve_dump(const std::filesystem::path& localFolder) {
-	std::filesystem::path manifestPath = localFolder / "cento.yaml";
+void ArgsResolver::resolve_dump(const std::filesystem::path& manifestPath) {
 	if (!std::filesystem::exists(manifestPath)) {
-		Log::LogError("No cento.yaml file in the specified directory.");
+		Log::LogError("Manifest file doesn't exist.");
 		return;
 	}
 

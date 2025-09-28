@@ -1,0 +1,17 @@
+workspace:
+  projects:
+    - name: core_cpp
+      dependsOn: [math_rs, net_go]
+      targets:
+        - name: core
+          type: dylib
+          language: cpp
+          toolchain: gcc
+          sources: ["src/**/*.cpp"]
+          includeDirs: ["src/**/"]
+          link: ["math_rs:math", "net_go:go"]
+          intDir: "${BUILD_DIR}/obj/core"
+          outDir: "${BUILD_DIR}/app"
+          bridges:
+            implements: ["{$CENTO_WORKSPACE_DIR}/idl/core/**/*.idl"]
+            uses: ["{$CENTO_WORKSPACE_DIR}/idl/app/**/*.idl", "{$CENTO_WORKSPACE_DIR}/idl/math/**/*.idl", "{$CENTO_WORKSPACE_DIR}/idl/go/**/*.idl"]

@@ -1,0 +1,2 @@
+vars: { DEFAULT_PROFILE: "release", BUILD_DIR: "build" }
+envFiles: [".env", ".env.local"]

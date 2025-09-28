@@ -1,0 +1,7 @@
+profiles:
+  - name: dev
+    defines: [DEV]
+    optimize: balanced
+  - name: release
+    defines: [NDEBUG]
+    optimize: fastest

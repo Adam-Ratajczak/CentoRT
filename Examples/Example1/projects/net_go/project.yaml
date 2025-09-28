@@ -1,0 +1,16 @@
+workspace:
+  projects:
+    - name: net_go
+      dependsOn: []
+      targets:
+        - name: net
+          type: dylib
+          language: go
+          toolchain: go
+          sources: ["src/**/*.go"]
+          link: []
+          intDir: "${BUILD_DIR}/obj/net"
+          outDir: "${BUILD_DIR}/app"
+          bridges:
+            implements: ["{$CENTO_WORKSPACE_DIR}/idl/net/**/*.idl"]
+            uses: []

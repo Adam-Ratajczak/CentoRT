@@ -1,0 +1,16 @@
+workspace:
+  projects:
+    - name: math_rs
+      dependsOn: []
+      targets:
+        - name: math
+          type: dylib
+          language: rs
+          toolchain: cargo
+          sources: ["src/**/*.rs"]
+          link: []
+          intDir: "${BUILD_DIR}/obj/math"
+          outDir: "${BUILD_DIR}/app"
+          bridges:
+            implements: ["{$CENTO_WORKSPACE_DIR}/idl/math/**/*.idl"]
+            uses: []
