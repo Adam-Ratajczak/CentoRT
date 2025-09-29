@@ -68,4 +68,56 @@ namespace Utils {
         return wildcards::match(sequence, pattern);
     }
 
+    std::string ExpandVarsOnce(const std::string& s, const std::map<std::string, std::string>& vars)
+    {
+        std::string out;
+        out.reserve(s.size());
+
+        std::size_t pos = 0;
+        while (pos < s.size()) {
+            std::size_t start = s.find("${", pos);
+            if (start == std::string::npos) {
+                out.append(s, pos, std::string::npos);
+                break;
+            }
+
+            if (start > 0 && s[start - 1] == '\\') {
+                out.append(s, pos, start - 1 - pos);
+                out += "${";
+                pos = start + 2;
+                continue;
+            }
+
+            out.append(s, pos, start - pos);
+
+            std::size_t end = s.find('}', start + 2);
+            if (end == std::string::npos) {
+                out.append(s, start, std::string::npos);
+                break;
+            }
+
+            std::string key = s.substr(start + 2, end - (start + 2));
+            auto it = vars.find(key);
+            if (it != vars.end()) {
+                out += it->second;
+            }
+            else {
+                out.append(s, start, end - start + 1);
+            }
+
+            pos = end + 1;
+        }
+
+        return out;
+    }
+
+    std::string ExpandVars(std::string s, const std::map<std::string, std::string>& vars, int max_passes)
+    {
+        for (int i = 0; i < max_passes; ++i) {
+            std::string t = ExpandVarsOnce(s, vars);
+            if (t == s) break;
+            s = std::move(t);
+        }
+        return s;
+    }
 }

@@ -17,7 +17,8 @@ void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
             mergedManifest = MergeManifest(mergedManifest, manifests[i]);
         }
 
-        PropagateVarsAndProfiles(mergedManifest, mergedManifest);
+        PropagateVarsAndProfiles(mergedManifest);
+        ManifestExpandVars(mergedManifest);
     }
     catch (std::exception& e) {
         _error = e.what();

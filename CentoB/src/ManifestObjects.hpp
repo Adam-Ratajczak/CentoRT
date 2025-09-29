@@ -9,7 +9,6 @@
 using OptMapStrStr = std::optional<std::map<std::string, std::string>>;
 using OptStr = std::optional<std::string>;
 using OptVecStr = std::optional<std::vector<std::string>>;
-using OptInt = std::optional<int>;
 
 #define MANIFEST_COMMON														\
 FIGCONE_DICT(vars, OptMapStrStr);								\
@@ -89,7 +88,7 @@ using OptManifestWorkspace = std::optional<ManifestWorkspace>;
 struct ManifestRoot : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
-	FIGCONE_PARAM(schemaVersion, OptInt);
+	FIGCONE_PARAM(schemaVersion, OptStr);
 	FIGCONE_PARAMLIST(includes, OptVecStr);
 	FIGCONE_NODE(workspace, OptManifestWorkspace);
 };
@@ -140,14 +139,6 @@ inline OptVecStr MergeManifest<OptVecStr>(const OptVecStr& lhs, const OptVecStr&
 	out.insert(out.end(), rhs->begin(), rhs->end());
 
 	return out;
-}
-
-template<>
-inline OptInt MergeManifest<OptInt>(const OptInt& lhs, const OptInt& rhs)
-{
-	GUARD_OPTIONALS
-
-	return rhs;
 }
 
 template<>
@@ -616,10 +607,6 @@ inline void CheckAndPostprocessManifest<OptManifestWorkspace>(const std::string&
 
 template<>
 inline void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck) {
-	if (!toCheck.schemaVersion.has_value() || *toCheck.schemaVersion <= 0) {
-		throw std::runtime_error("Schema version must exist and be a positive number");
-	}
-
 	std::filesystem::path base = currPath;
 	if (toCheck.path.has_value()) {
 		std::filesystem::path path = *toCheck.path;
@@ -752,8 +739,201 @@ inline void PropagateVarsAndProfiles<ManifestRoot, OptManifestWorkspace>(const M
 	PropagateVarsAndProfiles(*child, child->projects);
 }
 
-template<>
-inline void PropagateVarsAndProfiles<ManifestRoot, ManifestRoot>(const ManifestRoot& parent, ManifestRoot& child) {
+inline void PropagateVarsAndProfiles(ManifestRoot& child) {
 	PropagateVarsAndProfiles(child.vars, child.profiles);
 	PropagateVarsAndProfiles(child, child.workspace);
+}
+
+template<typename T>
+inline T ManifestExpandVars(const OptMapStrStr& vars, const T& toExpand) {
+	throw std::runtime_error("Unimplemented variables expansion object");
+}
+
+template<>
+inline OptMapStrStr ManifestExpandVars<OptMapStrStr>(const OptMapStrStr& vars, const OptMapStrStr& toExpand)
+{
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	std::map<std::string, std::string> out = *toExpand;
+	for (const auto& [key, value] : out) {
+		out[key] = Utils::ExpandVars(value, *vars);
+	}
+
+	return out;
+}
+
+template<>
+inline OptStr ManifestExpandVars<OptStr>(const OptMapStrStr& vars, const OptStr& toExpand)
+{
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	return Utils::ExpandVars(*toExpand, *vars);
+}
+
+template<>
+inline OptVecStr ManifestExpandVars<OptVecStr>(const OptMapStrStr& vars, const OptVecStr& toExpand)
+{
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	std::vector<std::string> out = *toExpand;
+	for (auto& value : out) {
+		value = Utils::ExpandVars(value, *vars);
+	}
+
+	return out;
+}
+
+template<>
+inline OptVecManifestProfile ManifestExpandVars<OptVecManifestProfile>(const OptMapStrStr& vars, const OptVecManifestProfile& toExpand)
+{
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	std::vector<ManifestProfile> out = *toExpand;
+	for (auto& profile : out) {
+		profile.vars = ManifestExpandVars(profile.vars, profile.vars);
+		profile.path = ManifestExpandVars(profile.vars, profile.path);
+		profile.envFiles = ManifestExpandVars(profile.vars, profile.envFiles);
+		profile.name = ManifestExpandVars(profile.vars, profile.name);
+		profile.defines = ManifestExpandVars(profile.vars, profile.defines);
+		profile.optimize = ManifestExpandVars(profile.vars, profile.optimize);
+	}
+
+	return out;
+}
+
+template<>
+inline OptVecManifestExternalDependencies ManifestExpandVars<OptVecManifestExternalDependencies>(const OptMapStrStr& vars, const OptVecManifestExternalDependencies& toExpand)
+{
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	std::vector<ManifestExternalDependencies> out = *toExpand;
+	for (auto& externalDependency : out) {
+		externalDependency.toolchain = ManifestExpandVars(vars, externalDependency.toolchain);
+		externalDependency.name = ManifestExpandVars(vars, externalDependency.name);
+		externalDependency.version = ManifestExpandVars(vars, externalDependency.version);
+		externalDependency.url = ManifestExpandVars(vars, externalDependency.url);
+		externalDependency.branch = ManifestExpandVars(vars, externalDependency.branch);
+		externalDependency.libs = ManifestExpandVars(vars, externalDependency.libs);
+		externalDependency.buildsystem = ManifestExpandVars(vars, externalDependency.buildsystem);
+		externalDependency.buildArgs = ManifestExpandVars(vars, externalDependency.buildArgs);
+	}
+
+	return out;
+}
+
+template<>
+inline OptManifestBridges ManifestExpandVars<OptManifestBridges>(const OptMapStrStr& vars, const OptManifestBridges& toExpand) {
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	ManifestBridges out;
+	out.uses = ManifestExpandVars(vars, toExpand->uses);
+	out.implements = ManifestExpandVars(vars, toExpand->implements);
+
+	return out;
+}
+
+template<>
+inline OptVecManifestTarget ManifestExpandVars<OptVecManifestTarget>(const OptMapStrStr& vars, const OptVecManifestTarget& toExpand)
+{
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	std::vector<ManifestTarget> out = *toExpand;
+	for (auto& target : out) {
+		target.vars = ManifestExpandVars(target.vars, target.vars);
+		target.path = ManifestExpandVars(target.vars, target.path);
+		target.envFiles = ManifestExpandVars(target.vars, target.envFiles);
+		target.name = ManifestExpandVars(target.vars, target.name);
+		target.profiles = ManifestExpandVars(target.vars, target.profiles);
+		target.type = ManifestExpandVars(target.vars, target.type);
+		target.language = ManifestExpandVars(target.vars, target.language);
+		target.toolchain = ManifestExpandVars(target.vars, target.toolchain);
+		target.sources = ManifestExpandVars(target.vars, target.sources);
+		target.includeDirs = ManifestExpandVars(target.vars, target.includeDirs);
+		target.link = ManifestExpandVars(target.vars, target.link);
+		target.intDir = ManifestExpandVars(target.vars, target.intDir);
+		target.outDir = ManifestExpandVars(target.vars, target.outDir);
+		target.bridges = ManifestExpandVars(target.vars, target.bridges);
+	}
+
+	return out;
+}
+
+template<>
+inline OptVecManifestProject ManifestExpandVars<OptVecManifestProject>(const OptMapStrStr& vars, const OptVecManifestProject& toExpand)
+{
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	std::vector<ManifestProject> out = *toExpand;
+	for (auto& project : out) {
+		project.vars = ManifestExpandVars(project.vars, project.vars);
+		project.path = ManifestExpandVars(project.vars, project.path);
+		project.envFiles = ManifestExpandVars(project.vars, project.envFiles);
+		project.name = ManifestExpandVars(project.vars, project.name);
+		project.profiles = ManifestExpandVars(project.vars, project.profiles);
+		project.dependsOn = ManifestExpandVars(project.vars, project.dependsOn);
+		project.externalDependencies = ManifestExpandVars(project.vars, project.externalDependencies);
+		project.startupTarget = ManifestExpandVars(project.vars, project.startupTarget);
+		project.targets = ManifestExpandVars(project.vars, project.targets);
+	}
+
+	return out;
+}
+
+template<>
+inline OptManifestAutomation ManifestExpandVars<OptManifestAutomation>(const OptMapStrStr& vars, const OptManifestAutomation& toExpand) {
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	ManifestAutomation out;
+	out.script = ManifestExpandVars(vars, toExpand->script);
+	out.hooks = ManifestExpandVars(vars, toExpand->hooks);
+	out.actions = ManifestExpandVars(vars, toExpand->actions);
+
+	return out;
+}
+
+template<>
+inline OptManifestWorkspace ManifestExpandVars<OptManifestWorkspace>(const OptMapStrStr& vars, const OptManifestWorkspace& toExpand) {
+	if (!vars.has_value() || !toExpand.has_value()) {
+		return toExpand;
+	}
+
+	ManifestWorkspace out;
+	out.vars = ManifestExpandVars(toExpand->vars, toExpand->vars);
+	out.path = ManifestExpandVars(toExpand->vars, toExpand->path);
+	out.envFiles = ManifestExpandVars(toExpand->vars, toExpand->envFiles);
+	out.profiles = ManifestExpandVars(toExpand->vars, toExpand->profiles);
+	out.defaultProfile = ManifestExpandVars(toExpand->vars, toExpand->defaultProfile);
+	out.startupProject = ManifestExpandVars(toExpand->vars, toExpand->startupProject);
+	out.projects = ManifestExpandVars(toExpand->vars, toExpand->projects);
+	out.automation = ManifestExpandVars(toExpand->vars, toExpand->automation);
+
+	return out;
+}
+
+inline void ManifestExpandVars(ManifestRoot& toExpand) {
+	toExpand.vars = ManifestExpandVars(toExpand.vars, toExpand.vars);
+	toExpand.path = ManifestExpandVars(toExpand.vars, toExpand.path);
+	toExpand.envFiles = ManifestExpandVars(toExpand.vars, toExpand.envFiles);
+	toExpand.profiles = ManifestExpandVars(toExpand.vars, toExpand.profiles);
+	toExpand.schemaVersion = ManifestExpandVars(toExpand.vars, toExpand.schemaVersion);
+	toExpand.includes = ManifestExpandVars(toExpand.vars, toExpand.includes);
+	toExpand.workspace = ManifestExpandVars(toExpand.vars, toExpand.workspace);
 }

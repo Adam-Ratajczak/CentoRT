@@ -20,6 +20,7 @@ FetchContent_Declare(wildcards
   GIT_SHALLOW    ON
   EXCLUDE_FROM_ALL
 )
+FetchContent_MakeAvailable(wildcards)
 
 FetchContent_GetProperties(wildcards)
 if(NOT wildcards_POPULATED)

@@ -11,4 +11,6 @@ namespace Utils {
 
 	bool IsWeaklyCanonical(const std::filesystem::path& p);
 	bool Match(const std::string& sequence, const std::string& pattern);
+
+	std::string ExpandVars(std::string s, const std::map<std::string, std::string>& vars, int max_passes = 10);
 }
