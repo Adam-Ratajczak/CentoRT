@@ -1,5 +1,8 @@
 #include "Utils.hpp"
 #include "WildcardsShim.hpp"
+#include <fstream>
+#include <algorithm>
+#include <cctype>
 
 namespace Utils {
     void ExpandGlob(const std::string& pattern,
@@ -17,6 +20,52 @@ namespace Utils {
                 paths.emplace_back(rel);
             }
         }
+    }
+
+    static inline void TrimInPlace(std::string& s) {
+        auto not_space = [](unsigned char ch) { return !std::isspace(ch); };
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), not_space));
+        s.erase(std::find_if(s.rbegin(), s.rend(), not_space).base(), s.end());
+    }
+
+    std::map<std::string, std::string> ParseEnvFile(const std::filesystem::path& path) {
+        std::map<std::string, std::string> out;
+
+        std::ifstream in(path);
+        if (!in) return out;
+
+        std::string line;
+        while (std::getline(in, line)) {
+            if (!line.empty() && line.back() == '\r') line.pop_back();
+
+            std::string view = line;
+            TrimInPlace(view);
+            if (view.empty() || view.front() == '#') continue;
+
+            auto pos = view.find('=');
+            if (pos == std::string::npos) continue;
+
+            std::string key = view.substr(0, pos);
+            std::string val = view.substr(pos + 1);
+
+            TrimInPlace(key);
+            TrimInPlace(val);
+
+            if (!key.empty()) out[key] = val;
+        }
+
+        return out;
+    }
+
+    bool IsWeaklyCanonical(const std::filesystem::path& p) {
+        std::error_code ec;
+        std::filesystem::path c = std::filesystem::weakly_canonical(p, ec);
+        if (ec) return false;
+        return p == c;
+    }
+    
+    bool Match(const std::string& sequence, const std::string& pattern) {
+        return wildcards::match(sequence, pattern);
     }
 
 }

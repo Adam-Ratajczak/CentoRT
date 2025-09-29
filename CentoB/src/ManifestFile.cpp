@@ -16,7 +16,6 @@ void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
         for (int i = 1; i < manifests.size(); i++) {
             mergedManifest = MergeManifest(mergedManifest, manifests[i]);
         }
-
     }
     catch (std::exception& e) {
         _error = e.what();
@@ -26,8 +25,9 @@ void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
 void ManifestFile::ReadManifestTree(const std::filesystem::path& filePath, figcone::ConfigReader& cfgReader, std::vector<ManifestRoot>& manifests) {
     try {
         ManifestRoot cfg = cfgReader.readYamlFile<ManifestRoot>(filePath);
+
+        std::filesystem::path curr_path = filePath.parent_path();
         if (cfg.includes.has_value()) {
-            std::filesystem::path curr_path = filePath.parent_path();
             std::vector<std::filesystem::path> paths;
             for (const auto& includeGlob : *cfg.includes) {
                 std::vector<std::filesystem::path> intermediatePaths;
@@ -38,8 +38,11 @@ void ManifestFile::ReadManifestTree(const std::filesystem::path& filePath, figco
             for (const auto& path : paths) {
                 ReadManifestTree(curr_path / path, cfgReader, manifests);
             }
+
+            cfg.includes = std::nullopt;
         }
 
+        CheckAndPostprocessManifest(curr_path.generic_string(), cfg);
         manifests.emplace_back(cfg);
     }
     catch (std::exception& e) {

@@ -4,6 +4,7 @@
 #include <map>
 #include <optional>
 #include <figcone/figcone.h>
+#include "Utils.hpp"
 
 using OptMapStrStr = std::optional<std::map<std::string, std::string>>;
 using OptStr = std::optional<std::string>;
@@ -349,6 +350,10 @@ inline OptManifestWorkspace MergeManifest<OptManifestWorkspace>(const OptManifes
 template<>
 inline ManifestRoot MergeManifest<ManifestRoot>(const ManifestRoot& lhs, const ManifestRoot& rhs)
 {
+	if (lhs.schemaVersion != rhs.schemaVersion) {
+		throw std::runtime_error("Schema version missmatch");
+	}
+
 	ManifestRoot out;
 	out.vars = MergeManifest(lhs.vars, rhs.vars);
 	out.path = MergeManifest(lhs.path, rhs.path);
@@ -359,4 +364,309 @@ inline ManifestRoot MergeManifest<ManifestRoot>(const ManifestRoot& lhs, const M
 	out.workspace = MergeManifest(lhs.workspace, rhs.workspace);
 
 	return out;
+}
+
+template<typename T>
+inline void CheckAndPostprocessManifest(const std::string& currPath, T& toCheck) {
+	throw std::runtime_error("Unimplemented postprocessing object");
+}
+
+template<>
+inline void CheckAndPostprocessManifest<OptVecManifestProfile>(const std::string& currPath, OptVecManifestProfile& toCheck) {
+	if (!toCheck.has_value()) {
+		return;
+	}
+
+	for (auto& profile : *toCheck) {
+		if (!profile.name.has_value() || profile.name->empty()) {
+			throw std::runtime_error("Profile name cannot be empty");
+		}
+
+		std::filesystem::path base = currPath;
+		if (profile.path.has_value()) {
+			std::filesystem::path path = *profile.path;
+			if (!Utils::IsWeaklyCanonical(path)) {
+				profile.path = (base / path).string();
+			}
+		}
+		else {
+			profile.path = base.string();
+		}
+
+		std::map<std::string, std::string> vars;
+		if (profile.vars.has_value()) {
+			vars = *profile.vars;
+		}
+
+		if (profile.envFiles.has_value()) {
+
+			for (const auto& envFileGlob : *profile.envFiles) {
+				std::vector<std::filesystem::path> paths;
+				Utils::ExpandGlob(envFileGlob, *profile.path, paths);
+				for (const auto& envPathLocal : paths) {
+					auto envPath = std::filesystem::path(*profile.path) / envPathLocal;
+					if (Utils::Match(envPath.generic_string(), "*.env")) {
+						auto envFile = Utils::ParseEnvFile(envPath);
+						for (const auto& [key, val] : envFile) {
+							vars[key] = val;
+						}
+					}
+				}
+
+				for (const auto& envPathLocal : paths) {
+					auto envPath = std::filesystem::path(*profile.path) / envPathLocal;
+					if (Utils::Match(envPath.generic_string(), "*.env.local")) {
+						auto envFile = Utils::ParseEnvFile(envPath);
+						for (const auto& [key, val] : envFile) {
+							vars[key] = val;
+						}
+					}
+				}
+			}
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *profile.path;
+		profile.vars = vars;
+		profile.envFiles = std::nullopt;
+	}
+}
+
+template<>
+inline void CheckAndPostprocessManifest<OptVecManifestTarget>(const std::string& currPath, OptVecManifestTarget& toCheck) {
+	if (!toCheck.has_value()) {
+		return;
+	}
+
+	for (auto& target : *toCheck) {
+		if (!target.name.has_value() || target.name->empty()) {
+			throw std::runtime_error("Target name cannot be empty");
+		}
+
+		std::filesystem::path base = currPath;
+		if (target.path.has_value()) {
+			std::filesystem::path path = *target.path;
+			if (!Utils::IsWeaklyCanonical(path)) {
+				target.path = (base / path).string();
+			}
+		}
+		else {
+			target.path = base.string();
+		}
+
+		std::map<std::string, std::string> vars;
+		if (target.vars.has_value()) {
+			vars = *target.vars;
+		}
+
+		if (target.envFiles.has_value()) {
+
+			for (const auto& envFileGlob : *target.envFiles) {
+				std::vector<std::filesystem::path> paths;
+				Utils::ExpandGlob(envFileGlob, *target.path, paths);
+				for (const auto& envPathLocal : paths) {
+					auto envPath = std::filesystem::path(*target.path) / envPathLocal;
+					if (Utils::Match(envPath.generic_string(), "*.env")) {
+						auto envFile = Utils::ParseEnvFile(envPath);
+						for (const auto& [key, val] : envFile) {
+							vars[key] = val;
+						}
+					}
+				}
+
+				for (const auto& envPathLocal : paths) {
+					auto envPath = std::filesystem::path(*target.path) / envPathLocal;
+					if (Utils::Match(envPath.generic_string(), "*.env.local")) {
+						auto envFile = Utils::ParseEnvFile(envPath);
+						for (const auto& [key, val] : envFile) {
+							vars[key] = val;
+						}
+					}
+				}
+			}
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *target.path;
+		target.vars = vars;
+		target.envFiles = std::nullopt;
+
+		CheckAndPostprocessManifest(*target.path, target.profiles);
+	}
+}
+
+template<>
+inline void CheckAndPostprocessManifest<OptVecManifestProject>(const std::string& currPath, OptVecManifestProject& toCheck) {
+	if (!toCheck.has_value()) {
+		return;
+	}
+
+	for (auto& project : *toCheck) {
+		if (!project.name.has_value() || project.name->empty()) {
+			throw std::runtime_error("Project name cannot be empty");
+		}
+
+		std::filesystem::path base = currPath;
+		if (project.path.has_value()) {
+			std::filesystem::path path = *project.path;
+			if (!Utils::IsWeaklyCanonical(path)) {
+				project.path = (base / path).string();
+			}
+		}
+		else {
+			project.path = base.string();
+		}
+
+		std::map<std::string, std::string> vars;
+		if (project.vars.has_value()) {
+			vars = *project.vars;
+		}
+
+		if (project.envFiles.has_value()) {
+
+			for (const auto& envFileGlob : *project.envFiles) {
+				std::vector<std::filesystem::path> paths;
+				Utils::ExpandGlob(envFileGlob, *project.path, paths);
+				for (const auto& envPathLocal : paths) {
+					auto envPath = std::filesystem::path(*project.path) / envPathLocal;
+					if (Utils::Match(envPath.generic_string(), "*.env")) {
+						auto envFile = Utils::ParseEnvFile(envPath);
+						for (const auto& [key, val] : envFile) {
+							vars[key] = val;
+						}
+					}
+				}
+
+				for (const auto& envPathLocal : paths) {
+					auto envPath = std::filesystem::path(*project.path) / envPathLocal;
+					if (Utils::Match(envPath.generic_string(), "*.env.local")) {
+						auto envFile = Utils::ParseEnvFile(envPath);
+						for (const auto& [key, val] : envFile) {
+							vars[key] = val;
+						}
+					}
+				}
+			}
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *project.path;
+		project.vars = vars;
+		project.envFiles = std::nullopt;
+
+		CheckAndPostprocessManifest(*project.path, project.targets);
+		CheckAndPostprocessManifest(*project.path, project.profiles);
+	}
+}
+
+template<>
+inline void CheckAndPostprocessManifest<OptManifestWorkspace>(const std::string& currPath, OptManifestWorkspace& toCheck) {
+	if (!toCheck.has_value()) {
+		return;
+	}
+
+	std::filesystem::path base = currPath;
+	if (toCheck->path.has_value()) {
+		std::filesystem::path path = *toCheck->path;
+		if (!Utils::IsWeaklyCanonical(path)) {
+			toCheck->path = (base / path).string();
+		}
+	}
+	else {
+		toCheck->path = base.string();
+	}
+
+	std::map<std::string, std::string> vars;
+	if (toCheck->vars.has_value()) {
+		vars = *toCheck->vars;
+	}
+
+	if (toCheck->envFiles.has_value()) {
+
+		for (const auto& envFileGlob : *toCheck->envFiles) {
+			std::vector<std::filesystem::path> paths;
+			Utils::ExpandGlob(envFileGlob, *toCheck->path, paths);
+			for (const auto& envPathLocal : paths) {
+				auto envPath = std::filesystem::path(*toCheck->path) / envPathLocal;
+				if (Utils::Match(envPath.generic_string(), "*.env")) {
+					auto envFile = Utils::ParseEnvFile(envPath);
+					for (const auto& [key, val] : envFile) {
+						vars[key] = val;
+					}
+				}
+			}
+
+			for (const auto& envPathLocal : paths) {
+				auto envPath = std::filesystem::path(*toCheck->path) / envPathLocal;
+				if (Utils::Match(envPath.generic_string(), "*.env.local")) {
+					auto envFile = Utils::ParseEnvFile(envPath);
+					for (const auto& [key, val] : envFile) {
+						vars[key] = val;
+					}
+				}
+			}
+		}
+	}
+
+	vars["CENTO_CURRENT_DIR"] = *toCheck->path;
+	vars["CENTO_WORKSPACE_DIR"] = *toCheck->path;
+	toCheck->vars = vars;
+	toCheck->envFiles = std::nullopt;
+
+	CheckAndPostprocessManifest(*toCheck->path, toCheck->projects);
+	CheckAndPostprocessManifest(*toCheck->path, toCheck->profiles);
+}
+
+template<>
+inline void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck) {
+	if (!toCheck.schemaVersion.has_value() || *toCheck.schemaVersion <= 0) {
+		throw std::runtime_error("Schema version must exist and be a positive number");
+	}
+
+	std::filesystem::path base = currPath;
+	if (toCheck.path.has_value()) {
+		std::filesystem::path path = *toCheck.path;
+		if (!Utils::IsWeaklyCanonical(path)) {
+			toCheck.path = (base / path).string();
+		}
+	}
+	else {
+		toCheck.path = base.string();
+	}
+
+	std::map<std::string, std::string> vars;
+	if (toCheck.vars.has_value()) {
+		vars = *toCheck.vars;
+	}
+
+	if (toCheck.envFiles.has_value()) {
+
+		for (const auto& envFileGlob : *toCheck.envFiles) {
+			std::vector<std::filesystem::path> paths;
+			Utils::ExpandGlob(envFileGlob, *toCheck.path, paths);
+			for (const auto& envPathLocal : paths) {
+				auto envPath = std::filesystem::path(*toCheck.path) / envPathLocal;
+				if (Utils::Match(envPath.generic_string(), "*.env")) {
+					auto envFile = Utils::ParseEnvFile(envPath);
+					for (const auto& [key, val] : envFile) {
+						vars[key] = val;
+					}
+				}
+			}
+
+			for (const auto& envPathLocal : paths) {
+				auto envPath = std::filesystem::path(*toCheck.path) / envPathLocal;
+				if (Utils::Match(envPath.generic_string(), "*.env.local")) {
+					auto envFile = Utils::ParseEnvFile(envPath);
+					for (const auto& [key, val] : envFile) {
+						vars[key] = val;
+					}
+				}
+			}
+		}
+	}
+
+	vars["CENTO_CURRENT_DIR"] = *toCheck.path;
+	toCheck.vars = vars;
+	toCheck.envFiles = std::nullopt;
+
+	CheckAndPostprocessManifest(*toCheck.path, toCheck.workspace);
+	CheckAndPostprocessManifest(*toCheck.path, toCheck.profiles);
 }

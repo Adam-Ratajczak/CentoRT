@@ -1,3 +1,5 @@
+schemaVersion: 1
+
 workspace:
   projects:
     - name: net_go
