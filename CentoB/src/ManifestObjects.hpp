@@ -670,3 +670,90 @@ inline void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPat
 	CheckAndPostprocessManifest(*toCheck.path, toCheck.workspace);
 	CheckAndPostprocessManifest(*toCheck.path, toCheck.profiles);
 }
+
+template<typename T, typename U>
+inline void PropagateVarsAndProfiles(const T& parent, U& child) {
+	throw std::runtime_error("Unimplemented propagation object");
+}
+
+template<>
+inline void PropagateVarsAndProfiles<OptMapStrStr, OptVecManifestProfile>(const OptMapStrStr& parent, OptVecManifestProfile& child) {
+	if (!child.has_value() || !parent.has_value()) {
+		return;
+	}
+
+	for (auto& prhs : *child) {
+		prhs.vars = MergeManifest(parent, prhs.vars);
+	}
+}
+
+template<>
+inline void PropagateVarsAndProfiles<OptVecManifestProfile, OptVecManifestProfile>(const OptVecManifestProfile& parent, OptVecManifestProfile& child) {
+	if (!parent.has_value()) {
+		return;
+	}
+
+	if (!child.has_value()) {
+		child = parent;
+		return;
+	}
+
+	for (const auto& plhs : *parent) {
+		bool found = false;
+		for (auto& prhs : *child) {
+			if (plhs.name == prhs.name) {
+				found = true;
+				prhs = MergeManifest(plhs, prhs);
+				break;
+			}
+		}
+		if (!found) {
+			child->emplace_back(plhs);
+		}
+	}
+}
+
+template<>
+inline void PropagateVarsAndProfiles<ManifestProject, OptVecManifestTarget>(const ManifestProject& parent, OptVecManifestTarget& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	for (auto& target : *child) {
+		target.vars = MergeManifest(parent.vars, target.vars);
+
+		PropagateVarsAndProfiles(parent.profiles, target.profiles);
+		PropagateVarsAndProfiles(target.vars, target.profiles);
+	}
+}
+
+template<>
+inline void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProject>(const ManifestWorkspace& parent, OptVecManifestProject& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	for (auto& project : *child) {
+		project.vars = MergeManifest(parent.vars, project.vars);
+
+		PropagateVarsAndProfiles(parent.profiles, project.profiles);
+		PropagateVarsAndProfiles(project.vars, project.profiles);
+		PropagateVarsAndProfiles(project, project.targets);
+	}
+}
+
+template<>
+inline void PropagateVarsAndProfiles<ManifestRoot, OptManifestWorkspace>(const ManifestRoot& parent, OptManifestWorkspace& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	child->vars = MergeManifest(parent.vars, child->vars);
+
+	PropagateVarsAndProfiles(parent.profiles, child->profiles);
+	PropagateVarsAndProfiles(child->vars, child->profiles);
+	PropagateVarsAndProfiles(*child, child->projects);
+}
+
+template<>
+inline void PropagateVarsAndProfiles<ManifestRoot, ManifestRoot>(const ManifestRoot& parent, ManifestRoot& child) {
+	PropagateVarsAndProfiles(child.vars, child.profiles);
+	PropagateVarsAndProfiles(child, child.workspace);
+}
