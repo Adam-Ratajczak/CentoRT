@@ -10,32 +10,28 @@ using OptMapStrStr = std::optional<std::map<std::string, std::string>>;
 using OptStr = std::optional<std::string>;
 using OptVecStr = std::optional<std::vector<std::string>>;
 
-#define MANIFEST_COMMON														\
-FIGCONE_DICT(vars, OptMapStrStr);								\
+#define MANIFEST_COMMON									\
+FIGCONE_DICT(vars, OptMapStrStr);						\
 FIGCONE_PARAM(path, OptStr);							\
 FIGCONE_PARAMLIST(envFiles, OptVecStr);
+
+#define MANIFEST_COMMON_FOR_TARGET						\
+FIGCONE_PARAMLIST(sources, OptVecStr);					\
+FIGCONE_PARAMLIST(includeDirs, OptVecStr);				\
+FIGCONE_PARAMLIST(compilerOptions, OptVecStr);			\
+FIGCONE_PARAM(intDir, OptStr);							\
+FIGCONE_PARAM(outDir, OptStr);							\
+FIGCONE_NODE(bridges, OptManifestBridges);				
 
 struct ManifestProfile : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
-	FIGCONE_PARAMLIST(defines, OptVecStr);
-	FIGCONE_PARAM(optimize, OptStr);
+	MANIFEST_COMMON_FOR_TARGET
 };
 using OptVecManifestProfile = std::optional<std::vector<ManifestProfile>>;
 
-struct ManifestExternalDependencies : public figcone::Config {
-	FIGCONE_PARAM(toolchain, OptStr);
-	FIGCONE_PARAM(name, OptStr);
-	FIGCONE_PARAM(version, OptStr);
-	FIGCONE_PARAM(url, OptStr);
-	FIGCONE_PARAM(branch, OptStr);
-	FIGCONE_PARAMLIST(libs, OptVecStr);
-	FIGCONE_PARAM(buildsystem, OptStr);
-	FIGCONE_PARAMLIST(buildArgs, OptVecStr);
-};
-using OptVecManifestExternalDependencies = std::optional<std::vector<ManifestExternalDependencies>>;
-
 struct ManifestBridges : public figcone::Config {
+	MANIFEST_COMMON;
 	FIGCONE_PARAMLIST(uses, OptVecStr);
 	FIGCONE_PARAMLIST(implements, OptVecStr);
 };
@@ -45,22 +41,33 @@ struct ManifestTarget : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
+	FIGCONE_PARAM(defaultProfile, OptStr);
 	FIGCONE_PARAM(type, OptStr);
 	FIGCONE_PARAM(language, OptStr);
 	FIGCONE_PARAM(toolchain, OptStr);
-	FIGCONE_PARAMLIST(sources, OptVecStr);
-	FIGCONE_PARAMLIST(includeDirs, OptVecStr);
 	FIGCONE_PARAMLIST(link, OptVecStr);
-	FIGCONE_PARAM(intDir, OptStr);
-	FIGCONE_PARAM(outDir, OptStr);
-	FIGCONE_NODE(bridges, OptManifestBridges);
+	MANIFEST_COMMON_FOR_TARGET
 };
 using OptVecManifestTarget = std::optional<std::vector<ManifestTarget>>;
+
+struct ManifestExternalDependencies : public figcone::Config {
+	MANIFEST_COMMON;
+	FIGCONE_PARAM(toolchain, OptStr);
+	FIGCONE_PARAM(name, OptStr);
+	FIGCONE_PARAM(version, OptStr);
+	FIGCONE_PARAM(url, OptStr);
+	FIGCONE_PARAM(branch, OptStr);
+	FIGCONE_PARAMLIST(resolveFirst, OptVecStr);
+	FIGCONE_PARAM(buildsystem, OptStr);
+	FIGCONE_PARAMLIST(buildArgs, OptVecStr);
+};
+using OptVecManifestExternalDependencies = std::optional<std::vector<ManifestExternalDependencies>>;
 
 struct ManifestProject : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
+	FIGCONE_PARAM(defaultProfile, OptStr);
 	FIGCONE_PARAMLIST(dependsOn, OptVecStr);
 	FIGCONE_NODELIST(externalDependencies, OptVecManifestExternalDependencies);
 	FIGCONE_PARAM(startupTarget, OptStr);
@@ -69,6 +76,7 @@ struct ManifestProject : public figcone::Config {
 using OptVecManifestProject = std::optional<std::vector<ManifestProject>>;
 
 struct ManifestAutomation : public figcone::Config {
+	MANIFEST_COMMON;
 	FIGCONE_PARAM(script, OptStr);
 	FIGCONE_DICT(hooks, OptMapStrStr);
 	FIGCONE_DICT(actions, OptMapStrStr);
@@ -77,285 +85,60 @@ using OptManifestAutomation = std::optional<ManifestAutomation>;
 
 struct ManifestWorkspace : public figcone::Config {
 	MANIFEST_COMMON;
+	FIGCONE_PARAM(name, OptStr);
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
 	FIGCONE_PARAM(defaultProfile, OptStr);
 	FIGCONE_PARAM(startupProject, OptStr);
 	FIGCONE_NODELIST(projects, OptVecManifestProject);
 	FIGCONE_NODE(automation, OptManifestAutomation);
 };
-using OptManifestWorkspace = std::optional<ManifestWorkspace>;
+using OptVecManifestWorkspace = std::optional<std::vector<ManifestWorkspace>>;
 
 struct ManifestRoot : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
-	FIGCONE_PARAM(schemaVersion, OptStr);
+	FIGCONE_PARAM(defaultProfile, OptStr);
 	FIGCONE_PARAMLIST(includes, OptVecStr);
-	FIGCONE_NODE(workspace, OptManifestWorkspace);
+	FIGCONE_NODE(workspaces, OptVecManifestWorkspace);
+	FIGCONE_PARAM(startupWorkspace, OptStr);
 };
 
 template<typename T>
 inline T MergeManifest(const T& lhs, const T& rhs) {
 	throw std::runtime_error("Unimplemented merge object");
 }
-
-#define GUARD_OPTIONALS						\
-if (!lhs.has_value() && !rhs.has_value()) {	\
-	return std::nullopt;					\
-}											\
-if (lhs.has_value() && !rhs.has_value()) {	\
-	return lhs;								\
-}											\
-if (!lhs.has_value() && rhs.has_value()) {	\
-	return rhs;								\
-}
+template<>
+OptMapStrStr MergeManifest<OptMapStrStr>(const OptMapStrStr& lhs, const OptMapStrStr& rhs);
 
 template<>
-inline OptMapStrStr MergeManifest<OptMapStrStr>(const OptMapStrStr& lhs, const OptMapStrStr& rhs)
-{
-	GUARD_OPTIONALS
-
-	std::map<std::string, std::string> out = *lhs;
-	for (const auto& [key, value] : *rhs) {
-		out[key] = value;
-	}
-
-	return out;
-}
+OptStr MergeManifest<OptStr>(const OptStr& lhs, const OptStr& rhs);
 
 template<>
-inline OptStr MergeManifest<OptStr>(const OptStr& lhs, const OptStr& rhs)
-{
-	GUARD_OPTIONALS
-
-	return rhs;
-}
+OptVecStr MergeManifest<OptVecStr>(const OptVecStr& lhs, const OptVecStr& rhs);
 
 template<>
-inline OptVecStr MergeManifest<OptVecStr>(const OptVecStr& lhs, const OptVecStr& rhs)
-{
-	GUARD_OPTIONALS
-
-	std::vector<std::string> out = *lhs;
-	out.insert(out.end(), rhs->begin(), rhs->end());
-
-	return out;
-}
+OptVecManifestProfile MergeManifest<OptVecManifestProfile>(const OptVecManifestProfile& lhs, const OptVecManifestProfile& rhs);
 
 template<>
-inline OptVecManifestProfile MergeManifest<OptVecManifestProfile>(const OptVecManifestProfile& lhs, const OptVecManifestProfile& rhs)
-{
-	GUARD_OPTIONALS
-
-	std::map<std::string, ManifestProfile> profileMap;
-	for (auto& plhs : *lhs) {
-		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	for (const auto& prhs : *rhs) {
-		auto name = prhs.name.has_value() ? *prhs.name : "";
-		auto it = profileMap.find(name);
-		if (it != profileMap.end()) {
-			auto& plhs = it->second;
-
-			plhs.vars = MergeManifest(plhs.vars, prhs.vars);
-			plhs.path = MergeManifest(plhs.path, prhs.path);
-			plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
-			plhs.name = MergeManifest(plhs.name, prhs.name);
-			plhs.defines = MergeManifest(plhs.defines, prhs.defines);
-			plhs.optimize = MergeManifest(plhs.optimize, prhs.optimize);
-		}
-		else {
-			profileMap[name] = prhs;
-		}
-	}
-
-	std::vector<ManifestProfile> out;
-	for (const auto& [key, value] : profileMap) {
-		out.emplace_back(value);
-	}
-
-	return out;
-}
+OptVecManifestExternalDependencies MergeManifest<OptVecManifestExternalDependencies>(const OptVecManifestExternalDependencies& lhs, const OptVecManifestExternalDependencies& rhs);
 
 template<>
-inline OptVecManifestExternalDependencies MergeManifest<OptVecManifestExternalDependencies>(const OptVecManifestExternalDependencies& lhs, const OptVecManifestExternalDependencies& rhs)
-{
-	GUARD_OPTIONALS
-
-	std::map<std::string, ManifestExternalDependencies> externalDependenciesMap;
-	for (auto& plhs : *lhs) {
-		externalDependenciesMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	for (const auto& prhs : *rhs) {
-		auto name = prhs.name.has_value() ? *prhs.name : "";
-		auto it = externalDependenciesMap.find(name);
-		if (it != externalDependenciesMap.end()) {
-			auto& plhs = it->second;
-
-			plhs.toolchain = MergeManifest(plhs.toolchain, prhs.toolchain);
-			plhs.name = MergeManifest(plhs.name, prhs.name);
-			plhs.version = MergeManifest(plhs.version, prhs.version);
-			plhs.url = MergeManifest(plhs.url, prhs.url);
-			plhs.branch = MergeManifest(plhs.branch, prhs.branch);
-			plhs.libs = MergeManifest(plhs.libs, prhs.libs);
-			plhs.buildsystem = MergeManifest(plhs.buildsystem, prhs.buildsystem);
-			plhs.buildArgs = MergeManifest(plhs.buildArgs, prhs.buildArgs);
-		}
-		else {
-			externalDependenciesMap[name] = prhs;
-		}
-	}
-
-	std::vector<ManifestExternalDependencies> out;
-	for (const auto& [key, value] : externalDependenciesMap) {
-		out.emplace_back(value);
-	}
-
-	return out;
-}
+OptManifestBridges MergeManifest<OptManifestBridges>(const OptManifestBridges& lhs, const OptManifestBridges& rhs);
 
 template<>
-inline OptManifestBridges MergeManifest<OptManifestBridges>(const OptManifestBridges& lhs, const OptManifestBridges& rhs) {
-	GUARD_OPTIONALS
-
-	ManifestBridges out;
-	out.uses = MergeManifest(lhs->uses, rhs->uses);
-	out.implements = MergeManifest(lhs->implements, rhs->implements);
-
-	return out;
-}
+OptVecManifestTarget MergeManifest<OptVecManifestTarget>(const OptVecManifestTarget& lhs, const OptVecManifestTarget& rhs);
 
 template<>
-inline OptVecManifestTarget MergeManifest<OptVecManifestTarget>(const OptVecManifestTarget& lhs, const OptVecManifestTarget& rhs)
-{
-	GUARD_OPTIONALS
-
-		std::map<std::string, ManifestTarget> targetMap;
-	for (auto& plhs : *lhs) {
-		targetMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	for (const auto& prhs : *rhs) {
-		auto name = prhs.name.has_value() ? *prhs.name : "";
-		auto it = targetMap.find(name);
-		if (it != targetMap.end()) {
-			auto& plhs = it->second;
-
-			plhs.vars = MergeManifest(plhs.vars, prhs.vars);
-			plhs.path = MergeManifest(plhs.path, prhs.path);
-			plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
-			plhs.name = MergeManifest(plhs.name, prhs.name);
-			plhs.profiles = MergeManifest(plhs.profiles, prhs.profiles);
-			plhs.type = MergeManifest(plhs.type, prhs.type);
-			plhs.language = MergeManifest(plhs.language, prhs.language);
-			plhs.toolchain = MergeManifest(plhs.toolchain, prhs.toolchain);
-			plhs.sources = MergeManifest(plhs.sources, prhs.sources);
-			plhs.includeDirs = MergeManifest(plhs.includeDirs, prhs.includeDirs);
-			plhs.link = MergeManifest(plhs.link, prhs.link);
-			plhs.intDir = MergeManifest(plhs.intDir, prhs.intDir);
-			plhs.outDir = MergeManifest(plhs.outDir, prhs.outDir);
-			plhs.bridges = MergeManifest(plhs.bridges, prhs.bridges);
-		}
-		else {
-			targetMap[name] = prhs;
-		}
-	}
-
-	std::vector<ManifestTarget> out;
-	for (const auto& [key, value] : targetMap) {
-		out.emplace_back(value);
-	}
-
-	return out;
-}
+OptVecManifestProject MergeManifest<OptVecManifestProject>(const OptVecManifestProject& lhs, const OptVecManifestProject& rhs);
 
 template<>
-inline OptVecManifestProject MergeManifest<OptVecManifestProject>(const OptVecManifestProject& lhs, const OptVecManifestProject& rhs)
-{
-	GUARD_OPTIONALS
-
-		std::map<std::string, ManifestProject> projectMap;
-	for (auto& plhs : *lhs) {
-		projectMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	for (const auto& prhs : *rhs) {
-		auto name = prhs.name.has_value() ? *prhs.name : "";
-		auto it = projectMap.find(name);
-		if (it != projectMap.end()) {
-			auto& plhs = it->second;
-
-			plhs.vars = MergeManifest(plhs.vars, prhs.vars);
-			plhs.path = MergeManifest(plhs.path, prhs.path);
-			plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
-			plhs.name = MergeManifest(plhs.name, prhs.name);
-			plhs.profiles = MergeManifest(plhs.profiles, prhs.profiles);
-			plhs.dependsOn = MergeManifest(plhs.dependsOn, prhs.dependsOn);
-			plhs.externalDependencies = MergeManifest(plhs.externalDependencies, prhs.externalDependencies);
-			plhs.startupTarget = MergeManifest(plhs.startupTarget, prhs.startupTarget);
-			plhs.targets = MergeManifest(plhs.targets, prhs.targets);
-		}
-		else {
-			projectMap[name] = prhs;
-		}
-	}
-
-	std::vector<ManifestProject> out;
-	for (const auto& [key, value] : projectMap) {
-		out.emplace_back(value);
-	}
-
-	return out;
-}
+OptManifestAutomation MergeManifest<OptManifestAutomation>(const OptManifestAutomation& lhs, const OptManifestAutomation& rhs);
 
 template<>
-inline OptManifestAutomation MergeManifest<OptManifestAutomation>(const OptManifestAutomation& lhs, const OptManifestAutomation& rhs) {
-	GUARD_OPTIONALS
-
-	ManifestAutomation out;
-	out.script = MergeManifest(lhs->script, rhs->script);
-	out.hooks = MergeManifest(lhs->hooks, rhs->hooks);
-	out.actions = MergeManifest(lhs->actions, rhs->actions);
-
-	return out;
-}
+OptVecManifestWorkspace MergeManifest<OptVecManifestWorkspace>(const OptVecManifestWorkspace& lhs, const OptVecManifestWorkspace& rhs);
 
 template<>
-inline OptManifestWorkspace MergeManifest<OptManifestWorkspace>(const OptManifestWorkspace& lhs, const OptManifestWorkspace& rhs) {
-	GUARD_OPTIONALS
-
-	ManifestWorkspace out;
-	out.vars = MergeManifest(lhs->vars, rhs->vars);
-	out.path = MergeManifest(lhs->path, rhs->path);
-	out.envFiles = MergeManifest(lhs->envFiles, rhs->envFiles);
-	out.profiles = MergeManifest(lhs->profiles, rhs->profiles);
-	out.defaultProfile = MergeManifest(lhs->defaultProfile, rhs->defaultProfile);
-	out.startupProject = MergeManifest(lhs->startupProject, rhs->startupProject);
-	out.projects = MergeManifest(lhs->projects, rhs->projects);
-	out.automation = MergeManifest(lhs->automation, rhs->automation);
-
-	return out;
-}
-
-template<>
-inline ManifestRoot MergeManifest<ManifestRoot>(const ManifestRoot& lhs, const ManifestRoot& rhs)
-{
-	if (lhs.schemaVersion != rhs.schemaVersion) {
-		throw std::runtime_error("Schema version missmatch");
-	}
-
-	ManifestRoot out;
-	out.vars = MergeManifest(lhs.vars, rhs.vars);
-	out.path = MergeManifest(lhs.path, rhs.path);
-	out.envFiles = MergeManifest(lhs.envFiles, rhs.envFiles);
-	out.profiles = MergeManifest(lhs.profiles, rhs.profiles);
-	out.schemaVersion = MergeManifest(lhs.schemaVersion, rhs.schemaVersion);
-	out.includes = MergeManifest(lhs.includes, rhs.includes);
-	out.workspace = MergeManifest(lhs.workspace, rhs.workspace);
-
-	return out;
-}
+ManifestRoot MergeManifest<ManifestRoot>(const ManifestRoot& lhs, const ManifestRoot& rhs);
 
 template<typename T>
 inline void CheckAndPostprocessManifest(const std::string& currPath, T& toCheck) {
@@ -363,577 +146,91 @@ inline void CheckAndPostprocessManifest(const std::string& currPath, T& toCheck)
 }
 
 template<>
-inline void CheckAndPostprocessManifest<OptVecManifestProfile>(const std::string& currPath, OptVecManifestProfile& toCheck) {
-	if (!toCheck.has_value()) {
-		return;
-	}
-
-	for (auto& profile : *toCheck) {
-		if (!profile.name.has_value() || profile.name->empty()) {
-			throw std::runtime_error("Profile name cannot be empty");
-		}
-
-		std::filesystem::path base = currPath;
-		if (profile.path.has_value()) {
-			std::filesystem::path path = *profile.path;
-			if (!Utils::IsWeaklyCanonical(path)) {
-				profile.path = (base / path).string();
-			}
-		}
-		else {
-			profile.path = base.string();
-		}
-
-		std::map<std::string, std::string> vars;
-		if (profile.vars.has_value()) {
-			vars = *profile.vars;
-		}
-
-		if (profile.envFiles.has_value()) {
-
-			for (const auto& envFileGlob : *profile.envFiles) {
-				std::vector<std::filesystem::path> paths;
-				Utils::ExpandGlob(envFileGlob, *profile.path, paths);
-				for (const auto& envPathLocal : paths) {
-					auto envPath = std::filesystem::path(*profile.path) / envPathLocal;
-					if (Utils::Match(envPath.generic_string(), "*.env")) {
-						auto envFile = Utils::ParseEnvFile(envPath);
-						for (const auto& [key, val] : envFile) {
-							vars[key] = val;
-						}
-					}
-				}
-
-				for (const auto& envPathLocal : paths) {
-					auto envPath = std::filesystem::path(*profile.path) / envPathLocal;
-					if (Utils::Match(envPath.generic_string(), "*.env.local")) {
-						auto envFile = Utils::ParseEnvFile(envPath);
-						for (const auto& [key, val] : envFile) {
-							vars[key] = val;
-						}
-					}
-				}
-			}
-		}
-
-		vars["CENTO_CURRENT_DIR"] = *profile.path;
-		profile.vars = vars;
-		profile.envFiles = std::nullopt;
-	}
-}
+void CheckAndPostprocessManifest<OptVecManifestProfile>(const std::string& currPath, OptVecManifestProfile& toCheck);
 
 template<>
-inline void CheckAndPostprocessManifest<OptVecManifestTarget>(const std::string& currPath, OptVecManifestTarget& toCheck) {
-	if (!toCheck.has_value()) {
-		return;
-	}
-
-	for (auto& target : *toCheck) {
-		if (!target.name.has_value() || target.name->empty()) {
-			throw std::runtime_error("Target name cannot be empty");
-		}
-
-		std::filesystem::path base = currPath;
-		if (target.path.has_value()) {
-			std::filesystem::path path = *target.path;
-			if (!Utils::IsWeaklyCanonical(path)) {
-				target.path = (base / path).string();
-			}
-		}
-		else {
-			target.path = base.string();
-		}
-
-		std::map<std::string, std::string> vars;
-		if (target.vars.has_value()) {
-			vars = *target.vars;
-		}
-
-		if (target.envFiles.has_value()) {
-
-			for (const auto& envFileGlob : *target.envFiles) {
-				std::vector<std::filesystem::path> paths;
-				Utils::ExpandGlob(envFileGlob, *target.path, paths);
-				for (const auto& envPathLocal : paths) {
-					auto envPath = std::filesystem::path(*target.path) / envPathLocal;
-					if (Utils::Match(envPath.generic_string(), "*.env")) {
-						auto envFile = Utils::ParseEnvFile(envPath);
-						for (const auto& [key, val] : envFile) {
-							vars[key] = val;
-						}
-					}
-				}
-
-				for (const auto& envPathLocal : paths) {
-					auto envPath = std::filesystem::path(*target.path) / envPathLocal;
-					if (Utils::Match(envPath.generic_string(), "*.env.local")) {
-						auto envFile = Utils::ParseEnvFile(envPath);
-						for (const auto& [key, val] : envFile) {
-							vars[key] = val;
-						}
-					}
-				}
-			}
-		}
-
-		vars["CENTO_CURRENT_DIR"] = *target.path;
-		target.vars = vars;
-		target.envFiles = std::nullopt;
-
-		CheckAndPostprocessManifest(*target.path, target.profiles);
-	}
-}
+void CheckAndPostprocessManifest<OptVecManifestExternalDependencies>(const std::string& currPath, OptVecManifestExternalDependencies& toCheck);
 
 template<>
-inline void CheckAndPostprocessManifest<OptVecManifestProject>(const std::string& currPath, OptVecManifestProject& toCheck) {
-	if (!toCheck.has_value()) {
-		return;
-	}
-
-	for (auto& project : *toCheck) {
-		if (!project.name.has_value() || project.name->empty()) {
-			throw std::runtime_error("Project name cannot be empty");
-		}
-
-		std::filesystem::path base = currPath;
-		if (project.path.has_value()) {
-			std::filesystem::path path = *project.path;
-			if (!Utils::IsWeaklyCanonical(path)) {
-				project.path = (base / path).string();
-			}
-		}
-		else {
-			project.path = base.string();
-		}
-
-		std::map<std::string, std::string> vars;
-		if (project.vars.has_value()) {
-			vars = *project.vars;
-		}
-
-		if (project.envFiles.has_value()) {
-
-			for (const auto& envFileGlob : *project.envFiles) {
-				std::vector<std::filesystem::path> paths;
-				Utils::ExpandGlob(envFileGlob, *project.path, paths);
-				for (const auto& envPathLocal : paths) {
-					auto envPath = std::filesystem::path(*project.path) / envPathLocal;
-					if (Utils::Match(envPath.generic_string(), "*.env")) {
-						auto envFile = Utils::ParseEnvFile(envPath);
-						for (const auto& [key, val] : envFile) {
-							vars[key] = val;
-						}
-					}
-				}
-
-				for (const auto& envPathLocal : paths) {
-					auto envPath = std::filesystem::path(*project.path) / envPathLocal;
-					if (Utils::Match(envPath.generic_string(), "*.env.local")) {
-						auto envFile = Utils::ParseEnvFile(envPath);
-						for (const auto& [key, val] : envFile) {
-							vars[key] = val;
-						}
-					}
-				}
-			}
-		}
-
-		vars["CENTO_CURRENT_DIR"] = *project.path;
-		project.vars = vars;
-		project.envFiles = std::nullopt;
-
-		CheckAndPostprocessManifest(*project.path, project.targets);
-		CheckAndPostprocessManifest(*project.path, project.profiles);
-	}
-}
+void CheckAndPostprocessManifest<OptManifestBridges>(const std::string& currPath, OptManifestBridges& toCheck);
 
 template<>
-inline void CheckAndPostprocessManifest<OptManifestWorkspace>(const std::string& currPath, OptManifestWorkspace& toCheck) {
-	if (!toCheck.has_value()) {
-		return;
-	}
-
-	std::filesystem::path base = currPath;
-	if (toCheck->path.has_value()) {
-		std::filesystem::path path = *toCheck->path;
-		if (!Utils::IsWeaklyCanonical(path)) {
-			toCheck->path = (base / path).string();
-		}
-	}
-	else {
-		toCheck->path = base.string();
-	}
-
-	std::map<std::string, std::string> vars;
-	if (toCheck->vars.has_value()) {
-		vars = *toCheck->vars;
-	}
-
-	if (toCheck->envFiles.has_value()) {
-
-		for (const auto& envFileGlob : *toCheck->envFiles) {
-			std::vector<std::filesystem::path> paths;
-			Utils::ExpandGlob(envFileGlob, *toCheck->path, paths);
-			for (const auto& envPathLocal : paths) {
-				auto envPath = std::filesystem::path(*toCheck->path) / envPathLocal;
-				if (Utils::Match(envPath.generic_string(), "*.env")) {
-					auto envFile = Utils::ParseEnvFile(envPath);
-					for (const auto& [key, val] : envFile) {
-						vars[key] = val;
-					}
-				}
-			}
-
-			for (const auto& envPathLocal : paths) {
-				auto envPath = std::filesystem::path(*toCheck->path) / envPathLocal;
-				if (Utils::Match(envPath.generic_string(), "*.env.local")) {
-					auto envFile = Utils::ParseEnvFile(envPath);
-					for (const auto& [key, val] : envFile) {
-						vars[key] = val;
-					}
-				}
-			}
-		}
-	}
-
-	vars["CENTO_CURRENT_DIR"] = *toCheck->path;
-	vars["CENTO_WORKSPACE_DIR"] = *toCheck->path;
-	toCheck->vars = vars;
-	toCheck->envFiles = std::nullopt;
-
-	CheckAndPostprocessManifest(*toCheck->path, toCheck->projects);
-	CheckAndPostprocessManifest(*toCheck->path, toCheck->profiles);
-}
+void CheckAndPostprocessManifest<OptVecManifestTarget>(const std::string& currPath, OptVecManifestTarget& toCheck);
 
 template<>
-inline void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck) {
-	std::filesystem::path base = currPath;
-	if (toCheck.path.has_value()) {
-		std::filesystem::path path = *toCheck.path;
-		if (!Utils::IsWeaklyCanonical(path)) {
-			toCheck.path = (base / path).string();
-		}
-	}
-	else {
-		toCheck.path = base.string();
-	}
+void CheckAndPostprocessManifest<OptVecManifestProject>(const std::string& currPath, OptVecManifestProject& toCheck);
 
-	std::map<std::string, std::string> vars;
-	if (toCheck.vars.has_value()) {
-		vars = *toCheck.vars;
-	}
+template<>
+void CheckAndPostprocessManifest<OptManifestAutomation>(const std::string& currPath, OptManifestAutomation& toCheck);
 
-	if (toCheck.envFiles.has_value()) {
+template<>
+void CheckAndPostprocessManifest<OptVecManifestWorkspace>(const std::string& currPath, OptVecManifestWorkspace& toCheck);
 
-		for (const auto& envFileGlob : *toCheck.envFiles) {
-			std::vector<std::filesystem::path> paths;
-			Utils::ExpandGlob(envFileGlob, *toCheck.path, paths);
-			for (const auto& envPathLocal : paths) {
-				auto envPath = std::filesystem::path(*toCheck.path) / envPathLocal;
-				if (Utils::Match(envPath.generic_string(), "*.env")) {
-					auto envFile = Utils::ParseEnvFile(envPath);
-					for (const auto& [key, val] : envFile) {
-						vars[key] = val;
-					}
-				}
-			}
-
-			for (const auto& envPathLocal : paths) {
-				auto envPath = std::filesystem::path(*toCheck.path) / envPathLocal;
-				if (Utils::Match(envPath.generic_string(), "*.env.local")) {
-					auto envFile = Utils::ParseEnvFile(envPath);
-					for (const auto& [key, val] : envFile) {
-						vars[key] = val;
-					}
-				}
-			}
-		}
-	}
-
-	vars["CENTO_CURRENT_DIR"] = *toCheck.path;
-	toCheck.vars = vars;
-	toCheck.envFiles = std::nullopt;
-
-	CheckAndPostprocessManifest(*toCheck.path, toCheck.workspace);
-	CheckAndPostprocessManifest(*toCheck.path, toCheck.profiles);
-}
+template<>
+void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck);
 
 template<typename T, typename U>
-inline void PropagateVarsAndProfiles(const T& parent, U& child) {
+void PropagateVarsAndProfiles(const T& parent, U& child) {
 	throw std::runtime_error("Unimplemented propagation object");
 }
 
 template<>
-inline void PropagateVarsAndProfiles<OptMapStrStr, OptVecManifestProfile>(const OptMapStrStr& parent, OptVecManifestProfile& child) {
-	if (!child.has_value() || !parent.has_value()) {
-		return;
-	}
-
-	for (auto& prhs : *child) {
-		prhs.vars = MergeManifest(parent, prhs.vars);
-	}
-}
+void PropagateVarsAndProfiles<ManifestTarget, OptVecManifestProfile>(const ManifestTarget& parent, OptVecManifestProfile& child);
 
 template<>
-inline void PropagateVarsAndProfiles<OptVecManifestProfile, OptVecManifestProfile>(const OptVecManifestProfile& parent, OptVecManifestProfile& child) {
-	if (!parent.has_value()) {
-		return;
-	}
-
-	if (!child.has_value()) {
-		child = parent;
-		return;
-	}
-
-	for (const auto& plhs : *parent) {
-		bool found = false;
-		for (auto& prhs : *child) {
-			if (plhs.name == prhs.name) {
-				found = true;
-				prhs = MergeManifest(plhs, prhs);
-				break;
-			}
-		}
-		if (!found) {
-			child->emplace_back(plhs);
-		}
-	}
-}
+void PropagateVarsAndProfiles<ManifestTarget, OptManifestBridges>(const ManifestTarget& parent, OptManifestBridges& child);
 
 template<>
-inline void PropagateVarsAndProfiles<ManifestProject, OptVecManifestTarget>(const ManifestProject& parent, OptVecManifestTarget& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	for (auto& target : *child) {
-		target.vars = MergeManifest(parent.vars, target.vars);
-
-		PropagateVarsAndProfiles(parent.profiles, target.profiles);
-		PropagateVarsAndProfiles(target.vars, target.profiles);
-	}
-}
+void PropagateVarsAndProfiles<ManifestProject, OptVecManifestProfile>(const ManifestProject& parent, OptVecManifestProfile& child);
 
 template<>
-inline void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProject>(const ManifestWorkspace& parent, OptVecManifestProject& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	for (auto& project : *child) {
-		project.vars = MergeManifest(parent.vars, project.vars);
-
-		PropagateVarsAndProfiles(parent.profiles, project.profiles);
-		PropagateVarsAndProfiles(project.vars, project.profiles);
-		PropagateVarsAndProfiles(project, project.targets);
-	}
-}
+void PropagateVarsAndProfiles<ManifestProject, OptVecManifestExternalDependencies>(const ManifestProject& parent, OptVecManifestExternalDependencies& child);
 
 template<>
-inline void PropagateVarsAndProfiles<ManifestRoot, OptManifestWorkspace>(const ManifestRoot& parent, OptManifestWorkspace& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	child->vars = MergeManifest(parent.vars, child->vars);
+void PropagateVarsAndProfiles<ManifestProject, OptVecManifestTarget>(const ManifestProject& parent, OptVecManifestTarget& child);
 
-	PropagateVarsAndProfiles(parent.profiles, child->profiles);
-	PropagateVarsAndProfiles(child->vars, child->profiles);
-	PropagateVarsAndProfiles(*child, child->projects);
-}
+template<>
+void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProfile>(const ManifestWorkspace& parent, OptVecManifestProfile& child);
 
-inline void PropagateVarsAndProfiles(ManifestRoot& child) {
-	PropagateVarsAndProfiles(child.vars, child.profiles);
-	PropagateVarsAndProfiles(child, child.workspace);
-}
+template<>
+void PropagateVarsAndProfiles<ManifestWorkspace, OptManifestAutomation>(const ManifestWorkspace& parent, OptManifestAutomation& child);
+
+template<>
+void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProject>(const ManifestWorkspace& parent, OptVecManifestProject& child);
+
+template<>
+void PropagateVarsAndProfiles<ManifestRoot, OptVecManifestProfile>(const ManifestRoot& parent, OptVecManifestProfile& child);
+
+template<>
+void PropagateVarsAndProfiles<ManifestRoot, OptVecManifestWorkspace>(const ManifestRoot& parent, OptVecManifestWorkspace& child);
+
+void PropagateVarsAndProfiles(ManifestRoot& child);
 
 template<typename T>
-inline T ManifestExpandVars(const OptMapStrStr& vars, const T& toExpand) {
+inline void ManifestExpandVars(T& toExpand) {
 	throw std::runtime_error("Unimplemented variables expansion object");
 }
 
 template<>
-inline OptMapStrStr ManifestExpandVars<OptMapStrStr>(const OptMapStrStr& vars, const OptMapStrStr& toExpand)
-{
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	std::map<std::string, std::string> out = *toExpand;
-	for (const auto& [key, value] : out) {
-		out[key] = Utils::ExpandVars(value, *vars);
-	}
-
-	return out;
-}
+void ManifestExpandVars<OptVecManifestProfile>(OptVecManifestProfile& toExpand);
 
 template<>
-inline OptStr ManifestExpandVars<OptStr>(const OptMapStrStr& vars, const OptStr& toExpand)
-{
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	return Utils::ExpandVars(*toExpand, *vars);
-}
+void ManifestExpandVars<OptVecManifestExternalDependencies>(OptVecManifestExternalDependencies& toExpand);
 
 template<>
-inline OptVecStr ManifestExpandVars<OptVecStr>(const OptMapStrStr& vars, const OptVecStr& toExpand)
-{
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	std::vector<std::string> out = *toExpand;
-	for (auto& value : out) {
-		value = Utils::ExpandVars(value, *vars);
-	}
-
-	return out;
-}
+void ManifestExpandVars<OptManifestBridges>(OptManifestBridges& toExpand);
 
 template<>
-inline OptVecManifestProfile ManifestExpandVars<OptVecManifestProfile>(const OptMapStrStr& vars, const OptVecManifestProfile& toExpand)
-{
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	std::vector<ManifestProfile> out = *toExpand;
-	for (auto& profile : out) {
-		profile.vars = ManifestExpandVars(profile.vars, profile.vars);
-		profile.path = ManifestExpandVars(profile.vars, profile.path);
-		profile.envFiles = ManifestExpandVars(profile.vars, profile.envFiles);
-		profile.name = ManifestExpandVars(profile.vars, profile.name);
-		profile.defines = ManifestExpandVars(profile.vars, profile.defines);
-		profile.optimize = ManifestExpandVars(profile.vars, profile.optimize);
-	}
-
-	return out;
-}
+void ManifestExpandVars<OptVecManifestTarget>(OptVecManifestTarget& toExpand);
 
 template<>
-inline OptVecManifestExternalDependencies ManifestExpandVars<OptVecManifestExternalDependencies>(const OptMapStrStr& vars, const OptVecManifestExternalDependencies& toExpand)
-{
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	std::vector<ManifestExternalDependencies> out = *toExpand;
-	for (auto& externalDependency : out) {
-		externalDependency.toolchain = ManifestExpandVars(vars, externalDependency.toolchain);
-		externalDependency.name = ManifestExpandVars(vars, externalDependency.name);
-		externalDependency.version = ManifestExpandVars(vars, externalDependency.version);
-		externalDependency.url = ManifestExpandVars(vars, externalDependency.url);
-		externalDependency.branch = ManifestExpandVars(vars, externalDependency.branch);
-		externalDependency.libs = ManifestExpandVars(vars, externalDependency.libs);
-		externalDependency.buildsystem = ManifestExpandVars(vars, externalDependency.buildsystem);
-		externalDependency.buildArgs = ManifestExpandVars(vars, externalDependency.buildArgs);
-	}
-
-	return out;
-}
+void ManifestExpandVars<OptVecManifestProject>(OptVecManifestProject& toExpand);
 
 template<>
-inline OptManifestBridges ManifestExpandVars<OptManifestBridges>(const OptMapStrStr& vars, const OptManifestBridges& toExpand) {
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	ManifestBridges out;
-	out.uses = ManifestExpandVars(vars, toExpand->uses);
-	out.implements = ManifestExpandVars(vars, toExpand->implements);
-
-	return out;
-}
+void ManifestExpandVars<OptManifestAutomation>(OptManifestAutomation& toExpand);
 
 template<>
-inline OptVecManifestTarget ManifestExpandVars<OptVecManifestTarget>(const OptMapStrStr& vars, const OptVecManifestTarget& toExpand)
-{
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	std::vector<ManifestTarget> out = *toExpand;
-	for (auto& target : out) {
-		target.vars = ManifestExpandVars(target.vars, target.vars);
-		target.path = ManifestExpandVars(target.vars, target.path);
-		target.envFiles = ManifestExpandVars(target.vars, target.envFiles);
-		target.name = ManifestExpandVars(target.vars, target.name);
-		target.profiles = ManifestExpandVars(target.vars, target.profiles);
-		target.type = ManifestExpandVars(target.vars, target.type);
-		target.language = ManifestExpandVars(target.vars, target.language);
-		target.toolchain = ManifestExpandVars(target.vars, target.toolchain);
-		target.sources = ManifestExpandVars(target.vars, target.sources);
-		target.includeDirs = ManifestExpandVars(target.vars, target.includeDirs);
-		target.link = ManifestExpandVars(target.vars, target.link);
-		target.intDir = ManifestExpandVars(target.vars, target.intDir);
-		target.outDir = ManifestExpandVars(target.vars, target.outDir);
-		target.bridges = ManifestExpandVars(target.vars, target.bridges);
-	}
-
-	return out;
-}
+void ManifestExpandVars<OptVecManifestWorkspace>(OptVecManifestWorkspace& toExpand);
 
 template<>
-inline OptVecManifestProject ManifestExpandVars<OptVecManifestProject>(const OptMapStrStr& vars, const OptVecManifestProject& toExpand)
-{
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	std::vector<ManifestProject> out = *toExpand;
-	for (auto& project : out) {
-		project.vars = ManifestExpandVars(project.vars, project.vars);
-		project.path = ManifestExpandVars(project.vars, project.path);
-		project.envFiles = ManifestExpandVars(project.vars, project.envFiles);
-		project.name = ManifestExpandVars(project.vars, project.name);
-		project.profiles = ManifestExpandVars(project.vars, project.profiles);
-		project.dependsOn = ManifestExpandVars(project.vars, project.dependsOn);
-		project.externalDependencies = ManifestExpandVars(project.vars, project.externalDependencies);
-		project.startupTarget = ManifestExpandVars(project.vars, project.startupTarget);
-		project.targets = ManifestExpandVars(project.vars, project.targets);
-	}
-
-	return out;
-}
-
-template<>
-inline OptManifestAutomation ManifestExpandVars<OptManifestAutomation>(const OptMapStrStr& vars, const OptManifestAutomation& toExpand) {
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	ManifestAutomation out;
-	out.script = ManifestExpandVars(vars, toExpand->script);
-	out.hooks = ManifestExpandVars(vars, toExpand->hooks);
-	out.actions = ManifestExpandVars(vars, toExpand->actions);
-
-	return out;
-}
-
-template<>
-inline OptManifestWorkspace ManifestExpandVars<OptManifestWorkspace>(const OptMapStrStr& vars, const OptManifestWorkspace& toExpand) {
-	if (!vars.has_value() || !toExpand.has_value()) {
-		return toExpand;
-	}
-
-	ManifestWorkspace out;
-	out.vars = ManifestExpandVars(toExpand->vars, toExpand->vars);
-	out.path = ManifestExpandVars(toExpand->vars, toExpand->path);
-	out.envFiles = ManifestExpandVars(toExpand->vars, toExpand->envFiles);
-	out.profiles = ManifestExpandVars(toExpand->vars, toExpand->profiles);
-	out.defaultProfile = ManifestExpandVars(toExpand->vars, toExpand->defaultProfile);
-	out.startupProject = ManifestExpandVars(toExpand->vars, toExpand->startupProject);
-	out.projects = ManifestExpandVars(toExpand->vars, toExpand->projects);
-	out.automation = ManifestExpandVars(toExpand->vars, toExpand->automation);
-
-	return out;
-}
-
-inline void ManifestExpandVars(ManifestRoot& toExpand) {
-	toExpand.vars = ManifestExpandVars(toExpand.vars, toExpand.vars);
-	toExpand.path = ManifestExpandVars(toExpand.vars, toExpand.path);
-	toExpand.envFiles = ManifestExpandVars(toExpand.vars, toExpand.envFiles);
-	toExpand.profiles = ManifestExpandVars(toExpand.vars, toExpand.profiles);
-	toExpand.schemaVersion = ManifestExpandVars(toExpand.vars, toExpand.schemaVersion);
-	toExpand.includes = ManifestExpandVars(toExpand.vars, toExpand.includes);
-	toExpand.workspace = ManifestExpandVars(toExpand.vars, toExpand.workspace);
-}
+void ManifestExpandVars<ManifestRoot>(ManifestRoot& toExpand);

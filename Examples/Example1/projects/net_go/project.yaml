@@ -11,8 +11,8 @@ workspace:
           toolchain: go
           sources: ["src/**/*.go"]
           link: []
-          intDir: "${BUILD_DIR}/obj/net"
-          outDir: "${BUILD_DIR}/app"
+          intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/net"
+          outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
           bridges:
             implements: ["{$CENTO_WORKSPACE_DIR}/idl/net/**/*.idl"]
             uses: []

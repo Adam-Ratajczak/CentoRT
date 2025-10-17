@@ -11,8 +11,8 @@ workspace:
           toolchain: cargo
           sources: ["src/**/*.rs"]
           link: []
-          intDir: "${BUILD_DIR}/obj/math"
-          outDir: "${BUILD_DIR}/app"
+          intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/math"
+          outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
           bridges:
             implements: ["{$CENTO_WORKSPACE_DIR}/idl/math/**/*.idl"]
             uses: []
