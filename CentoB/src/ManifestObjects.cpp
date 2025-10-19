@@ -864,7 +864,6 @@ void CollapseProfiles<OptVecManifestWorkspace>(OptVecManifestWorkspace& toCollap
 template<>
 void CollapseProfiles<ManifestRoot>(ManifestRoot& toCollapse) {
 	if (toCollapse.profiles.has_value()) {
-		for(auto& )
 	}
 }
 
