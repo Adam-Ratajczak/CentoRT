@@ -1,12 +1,13 @@
-schemaVersion: 1
 includes:
   - common/*.yaml
-  - projects/**/project.yaml
+  - projects/**/*.yaml
 
-workspace:
-  defaultProfile: ${DEFAULT_PROFILE}
-  startupProject: ${DEFAULT_PROJECT}
-  automation:
-    script: tools/automation.py
-    hooks: { prebuild: "prebuild", postbuild: "postbuild" }
-    actions: { install: "install", clean: "clean" }
+startupWorkspace: workspace
+workspaces:
+  - name: workspace
+    defaultProfile: ${DEFAULT_PROFILE}
+    startupProject: ${DEFAULT_PROJECT}
+    automation:
+        script: tools/automation.py
+        hooks: { prebuild: "prebuild", postbuild: "postbuild" }
+        actions: { install: "install", clean: "clean" }

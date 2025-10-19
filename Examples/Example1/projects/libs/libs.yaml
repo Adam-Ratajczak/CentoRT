@@ -1,0 +1,5 @@
+workspaces:
+  - name: workspace
+    projects:
+      - name: libs
+        dependsOn: []

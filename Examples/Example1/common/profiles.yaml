@@ -1,9 +1,7 @@
-schemaVersion: 1
-
 profiles:
   - name: dev
-    defines: [DEV]
-    optimize: balanced
+    compilerOptions: ["-O2, -Wall"]
+  - name: debug
+    compilerOptions: ["-O2, -Wall"]
   - name: release
-    defines: [NDEBUG]
-    optimize: fastest
+    compilerOptions: ["-O2, -Wall"]

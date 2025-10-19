@@ -6,9 +6,24 @@
 #include <figcone/figcone.h>
 #include "Utils.hpp"
 
+struct ManifestProfile;
+struct ManifestBridges;
+struct ManifestTarget;
+struct ManifestExternalDependencies;
+struct ManifestProject;
+struct ManifestAutomation;
+struct ManifestWorkspace;
+
 using OptMapStrStr = std::optional<std::map<std::string, std::string>>;
 using OptStr = std::optional<std::string>;
 using OptVecStr = std::optional<std::vector<std::string>>;
+using OptVecManifestProfile = std::optional<std::vector<ManifestProfile>>;
+using OptManifestBridges = std::optional<ManifestBridges>;
+using OptVecManifestTarget = std::optional<std::vector<ManifestTarget>>;
+using OptVecManifestExternalDependencies = std::optional<std::vector<ManifestExternalDependencies>>;
+using OptVecManifestProject = std::optional<std::vector<ManifestProject>>;
+using OptManifestAutomation = std::optional<ManifestAutomation>;
+using OptVecManifestWorkspace = std::optional<std::vector<ManifestWorkspace>>;
 
 #define MANIFEST_COMMON									\
 FIGCONE_DICT(vars, OptMapStrStr);						\
@@ -23,19 +38,17 @@ FIGCONE_PARAM(intDir, OptStr);							\
 FIGCONE_PARAM(outDir, OptStr);							\
 FIGCONE_NODE(bridges, OptManifestBridges);				
 
-struct ManifestProfile : public figcone::Config {
-	MANIFEST_COMMON;
-	FIGCONE_PARAM(name, OptStr);
-	MANIFEST_COMMON_FOR_TARGET
-};
-using OptVecManifestProfile = std::optional<std::vector<ManifestProfile>>;
-
 struct ManifestBridges : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_PARAMLIST(uses, OptVecStr);
 	FIGCONE_PARAMLIST(implements, OptVecStr);
 };
-using OptManifestBridges = std::optional<ManifestBridges>;
+
+struct ManifestProfile : public figcone::Config {
+	MANIFEST_COMMON;
+	FIGCONE_PARAM(name, OptStr);
+	MANIFEST_COMMON_FOR_TARGET
+};
 
 struct ManifestTarget : public figcone::Config {
 	MANIFEST_COMMON;
@@ -48,7 +61,6 @@ struct ManifestTarget : public figcone::Config {
 	FIGCONE_PARAMLIST(link, OptVecStr);
 	MANIFEST_COMMON_FOR_TARGET
 };
-using OptVecManifestTarget = std::optional<std::vector<ManifestTarget>>;
 
 struct ManifestExternalDependencies : public figcone::Config {
 	MANIFEST_COMMON;
@@ -61,7 +73,6 @@ struct ManifestExternalDependencies : public figcone::Config {
 	FIGCONE_PARAM(buildsystem, OptStr);
 	FIGCONE_PARAMLIST(buildArgs, OptVecStr);
 };
-using OptVecManifestExternalDependencies = std::optional<std::vector<ManifestExternalDependencies>>;
 
 struct ManifestProject : public figcone::Config {
 	MANIFEST_COMMON;
@@ -73,7 +84,6 @@ struct ManifestProject : public figcone::Config {
 	FIGCONE_PARAM(startupTarget, OptStr);
 	FIGCONE_NODELIST(targets, OptVecManifestTarget);
 };
-using OptVecManifestProject = std::optional<std::vector<ManifestProject>>;
 
 struct ManifestAutomation : public figcone::Config {
 	MANIFEST_COMMON;
@@ -81,7 +91,6 @@ struct ManifestAutomation : public figcone::Config {
 	FIGCONE_DICT(hooks, OptMapStrStr);
 	FIGCONE_DICT(actions, OptMapStrStr);
 };
-using OptManifestAutomation = std::optional<ManifestAutomation>;
 
 struct ManifestWorkspace : public figcone::Config {
 	MANIFEST_COMMON;
@@ -92,14 +101,13 @@ struct ManifestWorkspace : public figcone::Config {
 	FIGCONE_NODELIST(projects, OptVecManifestProject);
 	FIGCONE_NODE(automation, OptManifestAutomation);
 };
-using OptVecManifestWorkspace = std::optional<std::vector<ManifestWorkspace>>;
 
 struct ManifestRoot : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
 	FIGCONE_PARAM(defaultProfile, OptStr);
 	FIGCONE_PARAMLIST(includes, OptVecStr);
-	FIGCONE_NODE(workspaces, OptVecManifestWorkspace);
+	FIGCONE_NODELIST(workspaces, OptVecManifestWorkspace);
 	FIGCONE_PARAM(startupWorkspace, OptStr);
 };
 
@@ -168,6 +176,52 @@ void CheckAndPostprocessManifest<OptVecManifestWorkspace>(const std::string& cur
 
 template<>
 void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck);
+
+template<typename T>
+inline void EvaluateCentoVars(T& toEvaluate) {
+	throw std::runtime_error("Unimplemented evaluation object");
+}
+
+template<>
+void EvaluateCentoVars<OptVecManifestProfile>(OptVecManifestProfile& toEvaluate);
+
+template<>
+void EvaluateCentoVars<OptVecManifestExternalDependencies>(OptVecManifestExternalDependencies& toEvaluate);
+
+template<>
+void EvaluateCentoVars<OptManifestBridges>(OptManifestBridges& toEvaluate);
+
+template<>
+void EvaluateCentoVars<OptVecManifestTarget>(OptVecManifestTarget& toEvaluate);
+
+template<>
+void EvaluateCentoVars<OptVecManifestProject>(OptVecManifestProject& toEvaluate);
+
+template<>
+void EvaluateCentoVars<OptManifestAutomation>(OptManifestAutomation& toEvaluate);
+
+template<>
+void EvaluateCentoVars<OptVecManifestWorkspace>(OptVecManifestWorkspace& toEvaluate);
+
+template<>
+void EvaluateCentoVars<ManifestRoot>(ManifestRoot& toEvaluate);
+
+template<typename T>
+inline void CollapseProfiles(T& toCollapse) {
+	throw std::runtime_error("Unimplemented collapse object");
+}
+
+template<>
+void CollapseProfiles<OptVecManifestTarget>(OptVecManifestTarget& toCollapse);
+
+template<>
+void CollapseProfiles<OptVecManifestProject>(OptVecManifestProject& toCollapse);
+
+template<>
+void CollapseProfiles<OptVecManifestWorkspace>(OptVecManifestWorkspace& toCollapse);
+
+template<>
+void CollapseProfiles<ManifestRoot>(ManifestRoot& toCollapse);
 
 template<typename T, typename U>
 void PropagateVarsAndProfiles(const T& parent, U& child) {

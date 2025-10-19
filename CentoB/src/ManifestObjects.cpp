@@ -301,6 +301,9 @@ static std::set<std::string> _cento_vars = {
 	"CENTO_WORKSPACE_DIR",
 	"CENTO_ROOT_DIR",
 	"CENTO_CURRENT_PROFILE",
+	"CENTO_CURRENT_WORKSPACE",
+	"CENTO_CURRENT_PROJECT",
+	"CENTO_CURRENT_TARGET",
 };
 
 void VerifyIfOverridesCentoVars(const std::map<std::string, std::string>& vars, std::optional<std::string>& violatedVar) {
@@ -340,25 +343,25 @@ void ParseEnvFiles(const std::vector<std::string>& envFiles, const std::string& 
 	}
 }
 
-void ExpandPaths(const std::filesystem::path& basePath, OptVecStr& pathsToExpand) {
-	if (!pathsToExpand.has_value()) {
-		return;
-	}
-
-	std::vector<std::string> out;
-	for (const auto& pathGlob : *pathsToExpand) {
-		std::vector<std::filesystem::path> intermediatePaths;
-		Utils::ExpandGlob(pathGlob, basePath, intermediatePaths);
-		for (const auto& intPathLocal : intermediatePaths) {
-			auto intPath = (basePath / intPathLocal).string();
-			if (std::find(out.begin(), out.end(), intPath) == out.end()) {
-				out.emplace_back(intPath);
-			}
-		}
-	}
-
-	pathsToExpand = out;
-}
+//void ExpandPaths(const std::filesystem::path& basePath, OptVecStr& pathsToExpand) {
+//	if (!pathsToExpand.has_value()) {
+//		return;
+//	}
+//
+//	std::vector<std::string> out;
+//	for (const auto& pathGlob : *pathsToExpand) {
+//		std::vector<std::filesystem::path> intermediatePaths;
+//		Utils::ExpandGlob(pathGlob, basePath, intermediatePaths);
+//		for (const auto& intPathLocal : intermediatePaths) {
+//			auto intPath = (basePath / intPathLocal).string();
+//			if (std::find(out.begin(), out.end(), intPath) == out.end()) {
+//				out.emplace_back(intPath);
+//			}
+//		}
+//	}
+//
+//	pathsToExpand = out;
+//}
 
 template<>
 void CheckAndPostprocessManifest<OptVecManifestProfile>(const std::string& currPath, OptVecManifestProfile& toCheck) {
@@ -391,20 +394,6 @@ void CheckAndPostprocessManifest<OptVecManifestProfile>(const std::string& currP
 			ParseEnvFiles(*profile.envFiles, *profile.path, vars);
 			profile.envFiles = std::nullopt;
 		}
-
-		std::optional<std::string> violatedVar = std::nullopt;
-		VerifyIfOverridesCentoVars(vars, violatedVar);
-		if (violatedVar.has_value()) {
-			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
-		}
-
-		ExpandPaths(*profile.path, profile.sources);
-		ExpandPaths(*profile.path, profile.includeDirs);
-
-		vars["CENTO_CURRENT_DIR"] = *profile.path;
-		vars["CENTO_PROFILE_DIR"] = *profile.path;
-		profile.vars = vars;
-		profile.path = std::nullopt;
 	}
 }
 
@@ -439,17 +428,6 @@ void CheckAndPostprocessManifest<OptVecManifestExternalDependencies>(const std::
 			ParseEnvFiles(*externalDependency.envFiles, *externalDependency.path, vars);
 			externalDependency.envFiles = std::nullopt;
 		}
-
-		std::optional<std::string> violatedVar = std::nullopt;
-		VerifyIfOverridesCentoVars(vars, violatedVar);
-		if (violatedVar.has_value()) {
-			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
-		}
-
-		vars["CENTO_CURRENT_DIR"] = *externalDependency.path;
-		vars["CENTO_EXTERNAL_DEPENDENCY_DIR"] = *externalDependency.path;
-		externalDependency.vars = vars;
-		externalDependency.path = std::nullopt;
 	}
 }
 
@@ -481,20 +459,6 @@ void CheckAndPostprocessManifest<OptManifestBridges>(const std::string& currPath
 		ParseEnvFiles(*bridge.envFiles, *bridge.path, vars);
 		bridge.envFiles = std::nullopt;
 	}
-
-	std::optional<std::string> violatedVar = std::nullopt;
-	VerifyIfOverridesCentoVars(vars, violatedVar);
-	if (violatedVar.has_value()) {
-		throw std::runtime_error("Violated Cento variable: " + *violatedVar);
-	}
-
-	ExpandPaths(*bridge.path, bridge.uses);
-	ExpandPaths(*bridge.path, bridge.implements);
-
-	vars["CENTO_CURRENT_DIR"] = *bridge.path;
-	vars["CENTO_BRIDGE_DIR"] = *bridge.path;
-	bridge.vars = vars;
-	bridge.path = std::nullopt;
 }
 
 template<>
@@ -529,23 +493,8 @@ void CheckAndPostprocessManifest<OptVecManifestTarget>(const std::string& currPa
 			target.envFiles = std::nullopt;
 		}
 
-		std::optional<std::string> violatedVar = std::nullopt;
-		VerifyIfOverridesCentoVars(vars, violatedVar);
-		if (violatedVar.has_value()) {
-			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
-		}
-
-		ExpandPaths(*target.path, target.sources);
-		ExpandPaths(*target.path, target.includeDirs);
-
 		CheckAndPostprocessManifest(*target.path, target.profiles);
 		CheckAndPostprocessManifest(*target.path, target.bridges);
-
-		vars["CENTO_CURRENT_DIR"] = *target.path;
-		vars["CENTO_TARGET_DIR"] = *target.path;
-		vars["CENTO_CURRENT_PROFILE"] = target.defaultProfile.has_value() ? *target.defaultProfile : "";
-		target.vars = vars;
-		target.path = std::nullopt;
 	}
 }
 
@@ -581,21 +530,9 @@ void CheckAndPostprocessManifest<OptVecManifestProject>(const std::string& currP
 			project.envFiles = std::nullopt;
 		}
 
-		std::optional<std::string> violatedVar = std::nullopt;
-		VerifyIfOverridesCentoVars(vars, violatedVar);
-		if (violatedVar.has_value()) {
-			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
-		}
-
 		CheckAndPostprocessManifest(*project.path, project.targets);
 		CheckAndPostprocessManifest(*project.path, project.profiles);
 		CheckAndPostprocessManifest(*project.path, project.externalDependencies);
-
-		vars["CENTO_CURRENT_DIR"] = *project.path;
-		vars["CENTO_PROJECT_DIR"] = *project.path;
-		vars["CENTO_CURRENT_PROFILE"] = project.defaultProfile.has_value() ? *project.defaultProfile : "";
-		project.vars = vars;
-		project.path = std::nullopt;
 	}
 }
 
@@ -627,17 +564,6 @@ void CheckAndPostprocessManifest<OptManifestAutomation>(const std::string& currP
 		ParseEnvFiles(*automation.envFiles, *automation.path, vars);
 		automation.envFiles = std::nullopt;
 	}
-
-	std::optional<std::string> violatedVar = std::nullopt;
-	VerifyIfOverridesCentoVars(vars, violatedVar);
-	if (violatedVar.has_value()) {
-		throw std::runtime_error("Violated Cento variable: " + *violatedVar);
-	}
-
-	vars["CENTO_CURRENT_DIR"] = *automation.path;
-	vars["CENTO_AUTOMATION_DIR"] = *automation.path;
-	automation.vars = vars;
-	automation.path = std::nullopt;
 }
 
 template<>
@@ -645,7 +571,6 @@ void CheckAndPostprocessManifest<OptVecManifestWorkspace>(const std::string& cur
 	if (!toCheck.has_value()) {
 		return;
 	}
-
 
 	for (auto& workspace : *toCheck) {
 		if (!workspace.name.has_value() || workspace.name->empty()) {
@@ -673,45 +598,104 @@ void CheckAndPostprocessManifest<OptVecManifestWorkspace>(const std::string& cur
 			workspace.envFiles = std::nullopt;
 		}
 
+		CheckAndPostprocessManifest(*workspace.path, workspace.projects);
+		CheckAndPostprocessManifest(*workspace.path, workspace.profiles);
+		CheckAndPostprocessManifest(*workspace.path, workspace.automation);
+	}
+}
+
+template<>
+void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck) {
+	auto& root = toCheck;
+
+	std::filesystem::path base = currPath;
+	if (root.path.has_value()) {
+		std::filesystem::path path = *root.path;
+		if (!Utils::IsWeaklyCanonical(path)) {
+			root.path = (base / path).string();
+		}
+	}
+	else {
+		root.path = base.string();
+	}
+
+	std::map<std::string, std::string> vars;
+	if (root.vars.has_value()) {
+		vars = *root.vars;
+	}
+
+	if (root.envFiles.has_value()) {
+		ParseEnvFiles(*root.envFiles, *root.path, vars);
+		root.envFiles = std::nullopt;
+	}
+
+	CheckAndPostprocessManifest(*root.path, root.workspaces);
+	CheckAndPostprocessManifest(*root.path, root.profiles);
+
+	root.vars = vars;
+}
+
+template<>
+void EvaluateCentoVars<OptVecManifestProfile>(OptVecManifestProfile& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
+	}
+
+	for (auto& profile : *toEvaluate) {
+		std::map<std::string, std::string> vars;
+		if (profile.vars.has_value()) {
+			vars = *profile.vars;
+		}
+
 		std::optional<std::string> violatedVar = std::nullopt;
 		VerifyIfOverridesCentoVars(vars, violatedVar);
 		if (violatedVar.has_value()) {
 			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
 		}
 
-		CheckAndPostprocessManifest(*workspace.path, workspace.projects);
-		CheckAndPostprocessManifest(*workspace.path, workspace.profiles);
-		CheckAndPostprocessManifest(*workspace.path, workspace.automation);
-
-		vars["CENTO_CURRENT_DIR"] = *workspace.path;
-		vars["CENTO_WORKSPACE_DIR"] = *workspace.path;
-		vars["CENTO_CURRENT_PROFILE"] = workspace.defaultProfile.has_value() ? *workspace.defaultProfile : "";
-		workspace.vars = vars;
-		workspace.path = std::nullopt;
+		vars["CENTO_CURRENT_DIR"] = *profile.path;
+		vars["CENTO_PROFILE_DIR"] = *profile.path;
+		profile.vars = vars;
+		profile.path = std::nullopt;
 	}
 }
 
 template<>
-void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck) {
-	std::filesystem::path base = currPath;
-	if (toCheck.path.has_value()) {
-		std::filesystem::path path = *toCheck.path;
-		if (!Utils::IsWeaklyCanonical(path)) {
-			toCheck.path = (base / path).string();
+void EvaluateCentoVars<OptVecManifestExternalDependencies>(OptVecManifestExternalDependencies& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
+	}
+
+	for (auto& externalDependency : *toEvaluate) {
+		std::map<std::string, std::string> vars;
+		if (externalDependency.vars.has_value()) {
+			vars = *externalDependency.vars;
 		}
+
+		std::optional<std::string> violatedVar = std::nullopt;
+		VerifyIfOverridesCentoVars(vars, violatedVar);
+		if (violatedVar.has_value()) {
+			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *externalDependency.path;
+		vars["CENTO_EXTERNAL_DEPENDENCY_DIR"] = *externalDependency.path;
+		externalDependency.vars = vars;
+		externalDependency.path = std::nullopt;
 	}
-	else {
-		toCheck.path = base.string();
+}
+
+template<>
+void EvaluateCentoVars<OptManifestBridges>(OptManifestBridges& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
 	}
+
+	auto& bridge = *toEvaluate;
 
 	std::map<std::string, std::string> vars;
-	if (toCheck.vars.has_value()) {
-		vars = *toCheck.vars;
-	}
-
-	if (toCheck.envFiles.has_value()) {
-		ParseEnvFiles(*toCheck.envFiles, *toCheck.path, vars);
-		toCheck.envFiles = std::nullopt;
+	if (bridge.vars.has_value()) {
+		vars = *bridge.vars;
 	}
 
 	std::optional<std::string> violatedVar = std::nullopt;
@@ -720,31 +704,181 @@ void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, Mani
 		throw std::runtime_error("Violated Cento variable: " + *violatedVar);
 	}
 
-	CheckAndPostprocessManifest(*toCheck.path, toCheck.workspaces);
-	CheckAndPostprocessManifest(*toCheck.path, toCheck.profiles);
+	vars["CENTO_CURRENT_DIR"] = *bridge.path;
+	vars["CENTO_BRIDGE_DIR"] = *bridge.path;
+	bridge.vars = vars;
+	bridge.path = std::nullopt;
+}
 
-	vars["CENTO_CURRENT_DIR"] = *toCheck.path;
-	vars["CENTO_ROOT_DIR"] = *toCheck.path;
-	vars["CENTO_CURRENT_PROFILE"] = toCheck.defaultProfile.has_value() ? *toCheck.defaultProfile : "";
-	toCheck.vars = vars;
-	toCheck.path = std::nullopt;
+template<>
+void EvaluateCentoVars<OptVecManifestTarget>(OptVecManifestTarget& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
+	}
+
+	for (auto& target : *toEvaluate) {
+		std::map<std::string, std::string> vars;
+		if (target.vars.has_value()) {
+			vars = *target.vars;
+		}
+
+		std::optional<std::string> violatedVar = std::nullopt;
+		VerifyIfOverridesCentoVars(vars, violatedVar);
+		if (violatedVar.has_value()) {
+			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *target.path;
+		vars["CENTO_TARGET_DIR"] = *target.path;
+		vars["CENTO_CURRENT_PROFILE"] = target.defaultProfile.has_value() ? *target.defaultProfile : "";
+		target.vars = vars;
+		target.path = std::nullopt;
+		target.defaultProfile = std::nullopt;
+	}
+}
+
+template<>
+void EvaluateCentoVars<OptVecManifestProject>(OptVecManifestProject& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
+	}
+
+	for (auto& project : *toEvaluate) {
+		std::map<std::string, std::string> vars;
+		if (project.vars.has_value()) {
+			vars = *project.vars;
+		}
+
+		std::optional<std::string> violatedVar = std::nullopt;
+		VerifyIfOverridesCentoVars(vars, violatedVar);
+		if (violatedVar.has_value()) {
+			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *project.path;
+		vars["CENTO_PROJECT_DIR"] = *project.path;
+		vars["CENTO_CURRENT_PROFILE"] = project.defaultProfile.has_value() ? *project.defaultProfile : "";
+		vars["CENTO_CURRENT_TARGET"] = project.startupTarget.has_value() ? *project.startupTarget : "";
+		project.vars = vars;
+		project.path = std::nullopt;
+		project.defaultProfile = std::nullopt;
+		project.startupTarget = std::nullopt;
+	}
+}
+
+template<>
+void EvaluateCentoVars<OptManifestAutomation>(OptManifestAutomation& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
+	}
+
+	auto& automation = *toEvaluate;
+
+	std::map<std::string, std::string> vars;
+	if (automation.vars.has_value()) {
+		vars = *automation.vars;
+	}
+
+	std::optional<std::string> violatedVar = std::nullopt;
+	VerifyIfOverridesCentoVars(vars, violatedVar);
+	if (violatedVar.has_value()) {
+		throw std::runtime_error("Violated Cento variable: " + *violatedVar);
+	}
+
+	vars["CENTO_CURRENT_DIR"] = *automation.path;
+	vars["CENTO_AUTOMATION_DIR"] = *automation.path;
+	automation.vars = vars;
+	automation.path = std::nullopt;
+}
+
+template<>
+void EvaluateCentoVars<OptVecManifestWorkspace>(OptVecManifestWorkspace& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
+	}
+
+	for (auto& workspace : *toEvaluate) {
+		std::map<std::string, std::string> vars;
+		if (workspace.vars.has_value()) {
+			vars = *workspace.vars;
+		}
+
+		std::optional<std::string> violatedVar = std::nullopt;
+		VerifyIfOverridesCentoVars(vars, violatedVar);
+		if (violatedVar.has_value()) {
+			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *workspace.path;
+		vars["CENTO_WORKSPACE_DIR"] = *workspace.path;
+		vars["CENTO_CURRENT_PROFILE"] = workspace.defaultProfile.has_value() ? *workspace.defaultProfile : "";
+		vars["CENTO_CURRENT_PROJECT"] = workspace.startupProject.has_value() ? *workspace.startupProject : "";
+		workspace.vars = vars;
+		workspace.path = std::nullopt;
+		workspace.defaultProfile = std::nullopt;
+		workspace.startupProject = std::nullopt;
+	}
+}
+
+template<>
+void EvaluateCentoVars<ManifestRoot>(ManifestRoot& toEvaluate) {
+	auto& root = toEvaluate;
+
+	std::map<std::string, std::string> vars;
+	if (root.vars.has_value()) {
+		vars = *root.vars;
+	}
+
+	std::optional<std::string> violatedVar = std::nullopt;
+	VerifyIfOverridesCentoVars(vars, violatedVar);
+	if (violatedVar.has_value()) {
+		throw std::runtime_error("Violated Cento variable: " + *violatedVar);
+	}
+
+	vars["CENTO_CURRENT_DIR"] = *root.path;
+	vars["CENTO_ROOT_DIR"] = *root.path;
+	vars["CENTO_CURRENT_PROFILE"] = root.defaultProfile.has_value() ? *root.defaultProfile : "";
+	vars["CENTO_CURRENT_WORKSPACE"] = root.startupWorkspace.has_value() ? *root.startupWorkspace : "";
+
+	root.vars = vars;
+	root.path = std::nullopt;
+	root.defaultProfile = std::nullopt;
+	root.startupWorkspace = std::nullopt;
+}
+
+template<>
+void CollapseProfiles<OptVecManifestTarget>(OptVecManifestTarget& toCollapse) {
+
+}
+
+template<>
+void CollapseProfiles<OptVecManifestProject>(OptVecManifestProject& toCollapse) {
+
+}
+
+template<>
+void CollapseProfiles<OptVecManifestWorkspace>(OptVecManifestWorkspace& toCollapse) {
+
+}
+
+template<>
+void CollapseProfiles<ManifestRoot>(ManifestRoot& toCollapse) {
+	if (toCollapse.profiles.has_value()) {
+		for(auto& )
+	}
 }
 
 template<>
 void PropagateVarsAndProfiles<ManifestTarget, OptVecManifestProfile>(const ManifestTarget& parent, OptVecManifestProfile& child) {
-	if (!child.has_value()) {
+	if (!parent.profiles.has_value()) {
 		return;
 	}
-	for (auto& profile : *child) {
-		profile.vars = MergeManifest(parent.vars, profile.vars);
+	std::map<std::string, ManifestProfile> profileMap;
+	for (auto& plhs : *parent.profiles) {
+		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
 	}
 
-	if (parent.profiles.has_value()) {
-		std::map<std::string, ManifestProfile> profileMap;
-		for (auto& plhs : *parent.profiles) {
-			profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-		}
-
+	if (child.has_value()) {
 		for (const auto& prhs : *child) {
 			auto name = prhs.name.has_value() ? *prhs.name : "";
 			auto it = profileMap.find(name);
@@ -765,14 +899,14 @@ void PropagateVarsAndProfiles<ManifestTarget, OptVecManifestProfile>(const Manif
 				profileMap[name] = prhs;
 			}
 		}
-
-		std::vector<ManifestProfile> out;
-		for (const auto& [key, value] : profileMap) {
-			out.emplace_back(value);
-		}
-
-		child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 	}
+
+	std::vector<ManifestProfile> out;
+	for (const auto& [key, value] : profileMap) {
+		out.emplace_back(value);
+	}
+
+	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 }
 
 template<>
@@ -780,24 +914,20 @@ void PropagateVarsAndProfiles<ManifestTarget, OptManifestBridges>(const Manifest
 	if (!child.has_value()) {
 		return;
 	}
-	child->vars = MergeManifest(child->vars, child->vars);
+	child->vars = MergeManifest(parent.vars, child->vars);
 }
 
 template<>
 void PropagateVarsAndProfiles<ManifestProject, OptVecManifestProfile>(const ManifestProject& parent, OptVecManifestProfile& child) {
-	if (!child.has_value()) {
+	if (!parent.profiles.has_value()) {
 		return;
 	}
-	for (auto& profile : *child) {
-		profile.vars = MergeManifest(parent.vars, profile.vars);
+	std::map<std::string, ManifestProfile> profileMap;
+	for (auto& plhs : *parent.profiles) {
+		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
 	}
 
-	if (parent.profiles.has_value()) {
-		std::map<std::string, ManifestProfile> profileMap;
-		for (auto& plhs : *parent.profiles) {
-			profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-		}
-
+	if (child.has_value()) {
 		for (const auto& prhs : *child) {
 			auto name = prhs.name.has_value() ? *prhs.name : "";
 			auto it = profileMap.find(name);
@@ -818,14 +948,14 @@ void PropagateVarsAndProfiles<ManifestProject, OptVecManifestProfile>(const Mani
 				profileMap[name] = prhs;
 			}
 		}
-
-		std::vector<ManifestProfile> out;
-		for (const auto& [key, value] : profileMap) {
-			out.emplace_back(value);
-		}
-
-		child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 	}
+
+	std::vector<ManifestProfile> out;
+	for (const auto& [key, value] : profileMap) {
+		out.emplace_back(value);
+	}
+
+	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 }
 
 template<>
@@ -851,19 +981,15 @@ void PropagateVarsAndProfiles<ManifestProject, OptVecManifestTarget>(const Manif
 
 template<>
 void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProfile>(const ManifestWorkspace& parent, OptVecManifestProfile& child) {
-	if (!child.has_value()) {
+	if (!parent.profiles.has_value()) {
 		return;
 	}
-	for (auto& profile : *child) {
-		profile.vars = MergeManifest(parent.vars, profile.vars);
+	std::map<std::string, ManifestProfile> profileMap;
+	for (auto& plhs : *parent.profiles) {
+		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
 	}
 
-	if (parent.profiles.has_value()) {
-		std::map<std::string, ManifestProfile> profileMap;
-		for (auto& plhs : *parent.profiles) {
-			profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-		}
-
+	if (child.has_value()) {
 		for (const auto& prhs : *child) {
 			auto name = prhs.name.has_value() ? *prhs.name : "";
 			auto it = profileMap.find(name);
@@ -884,14 +1010,14 @@ void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProfile>(const Ma
 				profileMap[name] = prhs;
 			}
 		}
-
-		std::vector<ManifestProfile> out;
-		for (const auto& [key, value] : profileMap) {
-			out.emplace_back(value);
-		}
-
-		child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 	}
+
+	std::vector<ManifestProfile> out;
+	for (const auto& [key, value] : profileMap) {
+		out.emplace_back(value);
+	}
+
+	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 }
 
 template<>
@@ -899,7 +1025,7 @@ void PropagateVarsAndProfiles<ManifestWorkspace, OptManifestAutomation>(const Ma
 	if (!child.has_value()) {
 		return;
 	}
-	child->vars = MergeManifest(child->vars, child->vars);
+	child->vars = MergeManifest(parent.vars, child->vars);
 }
 
 template<>
@@ -911,7 +1037,7 @@ void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProject>(const Ma
 		project.vars = MergeManifest(parent.vars, project.vars);
 		project.defaultProfile = MergeManifest(parent.defaultProfile, project.defaultProfile);
 
-		PropagateVarsAndProfiles(project, project.profiles);
+		PropagateVarsAndProfiles(parent, project.profiles);
 		PropagateVarsAndProfiles(project, project.targets);
 		PropagateVarsAndProfiles(project, project.externalDependencies);
 	}
@@ -919,19 +1045,15 @@ void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProject>(const Ma
 
 template<>
 void PropagateVarsAndProfiles<ManifestRoot, OptVecManifestProfile>(const ManifestRoot& parent, OptVecManifestProfile& child) {
-	if (!child.has_value()) {
+	if (!parent.profiles.has_value()) {
 		return;
 	}
-	for (auto& profile : *child) {
-		profile.vars = MergeManifest(parent.vars, profile.vars);
+	std::map<std::string, ManifestProfile> profileMap;
+	for (auto& plhs : *parent.profiles) {
+		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
 	}
 
-	if (parent.profiles.has_value()) {
-		std::map<std::string, ManifestProfile> profileMap;
-		for (auto& plhs : *parent.profiles) {
-			profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-		}
-
+	if (child.has_value()) {
 		for (const auto& prhs : *child) {
 			auto name = prhs.name.has_value() ? *prhs.name : "";
 			auto it = profileMap.find(name);
@@ -952,14 +1074,14 @@ void PropagateVarsAndProfiles<ManifestRoot, OptVecManifestProfile>(const Manifes
 				profileMap[name] = prhs;
 			}
 		}
-
-		std::vector<ManifestProfile> out;
-		for (const auto& [key, value] : profileMap) {
-			out.emplace_back(value);
-		}
-
-		child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 	}
+
+	std::vector<ManifestProfile> out;
+	for (const auto& [key, value] : profileMap) {
+		out.emplace_back(value);
+	}
+
+	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
 }
 
 template<>
@@ -972,9 +1094,9 @@ void PropagateVarsAndProfiles<ManifestRoot, OptVecManifestWorkspace>(const Manif
 		workspace.vars = MergeManifest(parent.vars, workspace.vars);
 		workspace.defaultProfile = MergeManifest(parent.defaultProfile, workspace.defaultProfile);
 
-		PropagateVarsAndProfiles(*child, workspace.profiles);
-		PropagateVarsAndProfiles(*child, workspace.automation);
-		PropagateVarsAndProfiles(*child, workspace.projects);
+		PropagateVarsAndProfiles(parent, workspace.profiles);
+		PropagateVarsAndProfiles(workspace, workspace.automation);
+		PropagateVarsAndProfiles(workspace, workspace.projects);
 	}
 }
 
@@ -1169,4 +1291,6 @@ void ManifestExpandVars<ManifestRoot>(ManifestRoot& toExpand) {
 	toExpand.includes = ManifestExpandVars(toExpand.vars, toExpand.includes);
 	ManifestExpandVars(toExpand.workspaces);
 	toExpand.startupWorkspace = ManifestExpandVars(toExpand.vars, toExpand.startupWorkspace);
+
+	toExpand.vars = std::nullopt;
 }

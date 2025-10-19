@@ -18,6 +18,7 @@ void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
         }
 
         PropagateVarsAndProfiles(mergedManifest);
+        EvaluateCentoVars(mergedManifest);
         ManifestExpandVars(mergedManifest);
     }
     catch (std::exception& e) {

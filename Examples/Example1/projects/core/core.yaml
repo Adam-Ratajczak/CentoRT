@@ -1,0 +1,6 @@
+workspaces:
+  - name: workspace
+    projects:
+      - name: core
+        dependsOn: [libs]
+        startupTarget: app
