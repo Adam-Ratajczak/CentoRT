@@ -1,7 +1,7 @@
 profiles:
   - name: dev
-    compilerOptions: ["-O2, -Wall"]
+    vars: {CURRENT_PROFILE : "dev"}
   - name: debug
-    compilerOptions: ["-O2, -Wall"]
+    vars: {CURRENT_PROFILE : "debug"}
   - name: release
-    compilerOptions: ["-O2, -Wall"]
+    vars: {CURRENT_PROFILE : "release"}

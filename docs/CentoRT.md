@@ -10,4 +10,4 @@ Below, there are attributes that may be used in any of the YAML objects specifie
 
 #### 1.1.1.1. vars: `<dict>`
 
-User specifies variables dictionary (key : value) that may be later used to substitute `{$VAR_NAME}` syntax. In case of endless loop in `vars` dictionary, buildsystem shall throw an error. Using variables in keys ov `vars` dictionary is forbidden.
+User specifies variables dictionary (key : value) that may be later used to substitute `${VAR_NAME}` syntax. In case of endless loop in `vars` dictionary, buildsystem shall throw an error. Using variables in keys ov `vars` dictionary is forbidden.

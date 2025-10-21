@@ -1,5 +1,6 @@
 #include "ManifestObjects.hpp"
 #include <set>
+#include <iostream>
 
 #define GUARD_OPTIONALS						\
 if (!lhs.has_value() && !rhs.has_value()) {	\
@@ -12,29 +13,45 @@ if (!lhs.has_value() && rhs.has_value()) {	\
 	return rhs;								\
 }
 
-template<>
-OptMapStrStr MergeManifest<OptMapStrStr>(const OptMapStrStr& lhs, const OptMapStrStr& rhs)
+static std::set<std::string> _cento_vars = {
+	"CENTO_CURRENT_DIR",
+	"CENTO_PROFILE_DIR",
+	"CENTO_EXTERNAL_DEPENDENCY_DIR",
+	"CENTO_BRIDGE_DIR",
+	"CENTO_TARGET_DIR",
+	"CENTO_PROJECT_DIR",
+	"CENTO_CURRENT_DIR",
+	"CENTO_AUTOMATION_DIR",
+	"CENTO_WORKSPACE_DIR",
+	"CENTO_ROOT_DIR",
+	"CENTO_CURRENT_PROFILE",
+	"CENTO_CURRENT_WORKSPACE",
+	"CENTO_CURRENT_PROJECT",
+	"CENTO_CURRENT_TARGET",
+};
+
+OptMapStrStr MergeManifest(const OptMapStrStr& lhs, const OptMapStrStr& rhs)
 {
 	GUARD_OPTIONALS
 
 	std::map<std::string, std::string> out = *lhs;
 	for (const auto& [key, value] : *rhs) {
-		out[key] = value;
+		if (_cento_vars.find(key) == _cento_vars.end() || !value.empty()) {
+			out[key] = value;
+		}
 	}
 
 	return out;
 }
 
-template<>
-OptStr MergeManifest<OptStr>(const OptStr& lhs, const OptStr& rhs)
+OptStr MergeManifest(const OptStr& lhs, const OptStr& rhs)
 {
 	GUARD_OPTIONALS
 
 	return rhs;
 }
 
-template<>
-OptVecStr MergeManifest<OptVecStr>(const OptVecStr& lhs, const OptVecStr& rhs)
+OptVecStr MergeManifest(const OptVecStr& lhs, const OptVecStr& rhs)
 {
 	GUARD_OPTIONALS
 
@@ -44,12 +61,24 @@ OptVecStr MergeManifest<OptVecStr>(const OptVecStr& lhs, const OptVecStr& rhs)
 	return out;
 }
 
-template<>
-OptVecManifestProfile MergeManifest<OptVecManifestProfile>(const OptVecManifestProfile& lhs, const OptVecManifestProfile& rhs)
+OptManifestBridges MergeManifest(const OptManifestBridges& lhs, const OptManifestBridges& rhs) {
+	GUARD_OPTIONALS
+
+		ManifestBridges out;
+	out.vars = MergeManifest(lhs->vars, rhs->vars);
+	out.path = MergeManifest(lhs->path, rhs->path);
+	out.envFiles = MergeManifest(lhs->envFiles, rhs->envFiles);
+	out.uses = MergeManifest(lhs->uses, rhs->uses);
+	out.implements = MergeManifest(lhs->implements, rhs->implements);
+
+	return out;
+}
+
+OptVecManifestTargetProfile MergeManifest(const OptVecManifestTargetProfile& lhs, const OptVecManifestTargetProfile& rhs)
 {
 	GUARD_OPTIONALS
 
-	std::map<std::string, ManifestProfile> profileMap;
+		std::map<std::string, ManifestTargetProfile> profileMap;
 	for (auto& plhs : *lhs) {
 		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
 	}
@@ -76,6 +105,39 @@ OptVecManifestProfile MergeManifest<OptVecManifestProfile>(const OptVecManifestP
 		}
 	}
 
+	std::vector<ManifestTargetProfile> out;
+	for (const auto& [key, value] : profileMap) {
+		out.emplace_back(value);
+	}
+
+	return out;
+}
+
+OptVecManifestProfile MergeManifest(const OptVecManifestProfile& lhs, const OptVecManifestProfile& rhs)
+{
+	GUARD_OPTIONALS
+
+		std::map<std::string, ManifestProfile> profileMap;
+	for (auto& plhs : *lhs) {
+		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
+	}
+
+	for (const auto& prhs : *rhs) {
+		auto name = prhs.name.has_value() ? *prhs.name : "";
+		auto it = profileMap.find(name);
+		if (it != profileMap.end()) {
+			auto& plhs = it->second;
+
+			plhs.vars = MergeManifest(plhs.vars, prhs.vars);
+			plhs.path = MergeManifest(plhs.path, prhs.path);
+			plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
+			plhs.name = MergeManifest(plhs.name, prhs.name);
+		}
+		else {
+			profileMap[name] = prhs;
+		}
+	}
+
 	std::vector<ManifestProfile> out;
 	for (const auto& [key, value] : profileMap) {
 		out.emplace_back(value);
@@ -84,8 +146,7 @@ OptVecManifestProfile MergeManifest<OptVecManifestProfile>(const OptVecManifestP
 	return out;
 }
 
-template<>
-OptVecManifestExternalDependencies MergeManifest<OptVecManifestExternalDependencies>(const OptVecManifestExternalDependencies& lhs, const OptVecManifestExternalDependencies& rhs)
+OptVecManifestExternalDependencies MergeManifest(const OptVecManifestExternalDependencies& lhs, const OptVecManifestExternalDependencies& rhs)
 {
 	GUARD_OPTIONALS
 
@@ -125,22 +186,7 @@ OptVecManifestExternalDependencies MergeManifest<OptVecManifestExternalDependenc
 	return out;
 }
 
-template<>
-OptManifestBridges MergeManifest<OptManifestBridges>(const OptManifestBridges& lhs, const OptManifestBridges& rhs) {
-	GUARD_OPTIONALS
-
-	ManifestBridges out;
-	out.vars = MergeManifest(lhs->vars, rhs->vars);
-	out.path = MergeManifest(lhs->path, rhs->path);
-	out.envFiles = MergeManifest(lhs->envFiles, rhs->envFiles);
-	out.uses = MergeManifest(lhs->uses, rhs->uses);
-	out.implements = MergeManifest(lhs->implements, rhs->implements);
-
-	return out;
-}
-
-template<>
-OptVecManifestTarget MergeManifest<OptVecManifestTarget>(const OptVecManifestTarget& lhs, const OptVecManifestTarget& rhs)
+OptVecManifestTarget MergeManifest(const OptVecManifestTarget& lhs, const OptVecManifestTarget& rhs)
 {
 	GUARD_OPTIONALS
 
@@ -184,8 +230,7 @@ OptVecManifestTarget MergeManifest<OptVecManifestTarget>(const OptVecManifestTar
 	return out;
 }
 
-template<>
-OptVecManifestProject MergeManifest<OptVecManifestProject>(const OptVecManifestProject& lhs, const OptVecManifestProject& rhs)
+OptVecManifestProject MergeManifest(const OptVecManifestProject& lhs, const OptVecManifestProject& rhs)
 {
 	GUARD_OPTIONALS
 
@@ -205,7 +250,6 @@ OptVecManifestProject MergeManifest<OptVecManifestProject>(const OptVecManifestP
 			plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
 			plhs.name = MergeManifest(plhs.name, prhs.name);
 			plhs.profiles = MergeManifest(plhs.profiles, prhs.profiles);
-			plhs.dependsOn = MergeManifest(plhs.dependsOn, prhs.dependsOn);
 			plhs.externalDependencies = MergeManifest(plhs.externalDependencies, prhs.externalDependencies);
 			plhs.startupTarget = MergeManifest(plhs.startupTarget, prhs.startupTarget);
 			plhs.targets = MergeManifest(plhs.targets, prhs.targets);
@@ -223,8 +267,7 @@ OptVecManifestProject MergeManifest<OptVecManifestProject>(const OptVecManifestP
 	return out;
 }
 
-template<>
-OptManifestAutomation MergeManifest<OptManifestAutomation>(const OptManifestAutomation& lhs, const OptManifestAutomation& rhs) {
+OptManifestAutomation MergeManifest(const OptManifestAutomation& lhs, const OptManifestAutomation& rhs) {
 	GUARD_OPTIONALS
 
 	ManifestAutomation out;
@@ -238,8 +281,7 @@ OptManifestAutomation MergeManifest<OptManifestAutomation>(const OptManifestAuto
 	return out;
 }
 
-template<>
-OptVecManifestWorkspace MergeManifest<OptVecManifestWorkspace>(const OptVecManifestWorkspace& lhs, const OptVecManifestWorkspace& rhs) {
+OptVecManifestWorkspace MergeManifest(const OptVecManifestWorkspace& lhs, const OptVecManifestWorkspace& rhs) {
 	GUARD_OPTIONALS
 
 	std::map<std::string, ManifestWorkspace> workspaceMap;
@@ -274,8 +316,7 @@ OptVecManifestWorkspace MergeManifest<OptVecManifestWorkspace>(const OptVecManif
 	return out;
 }
 
-template<>
-ManifestRoot MergeManifest<ManifestRoot>(const ManifestRoot& lhs, const ManifestRoot& rhs)
+ManifestRoot MergeManifest(const ManifestRoot& lhs, const ManifestRoot& rhs)
 {
 	ManifestRoot out;
 	out.vars = MergeManifest(lhs.vars, rhs.vars);
@@ -284,27 +325,11 @@ ManifestRoot MergeManifest<ManifestRoot>(const ManifestRoot& lhs, const Manifest
 	out.profiles = MergeManifest(lhs.profiles, rhs.profiles);
 	out.includes = MergeManifest(lhs.includes, rhs.includes);
 	out.workspaces = MergeManifest(lhs.workspaces, rhs.workspaces);
+	out.defaultProfile = MergeManifest(lhs.defaultProfile, rhs.defaultProfile);
 	out.startupWorkspace = MergeManifest(lhs.startupWorkspace, rhs.startupWorkspace);
 
 	return out;
 }
-
-static std::set<std::string> _cento_vars = {
-	"CENTO_CURRENT_DIR",
-	"CENTO_PROFILE_DIR",
-	"CENTO_EXTERNAL_DEPENDENCY_DIR",
-	"CENTO_BRIDGE_DIR",
-	"CENTO_TARGET_DIR",
-	"CENTO_PROJECT_DIR",
-	"CENTO_CURRENT_DIR",
-	"CENTO_AUTOMATION_DIR",
-	"CENTO_WORKSPACE_DIR",
-	"CENTO_ROOT_DIR",
-	"CENTO_CURRENT_PROFILE",
-	"CENTO_CURRENT_WORKSPACE",
-	"CENTO_CURRENT_PROJECT",
-	"CENTO_CURRENT_TARGET",
-};
 
 void VerifyIfOverridesCentoVars(const std::map<std::string, std::string>& vars, std::optional<std::string>& violatedVar) {
 	for (const auto& [key, _] : vars) {
@@ -343,28 +368,7 @@ void ParseEnvFiles(const std::vector<std::string>& envFiles, const std::string& 
 	}
 }
 
-//void ExpandPaths(const std::filesystem::path& basePath, OptVecStr& pathsToExpand) {
-//	if (!pathsToExpand.has_value()) {
-//		return;
-//	}
-//
-//	std::vector<std::string> out;
-//	for (const auto& pathGlob : *pathsToExpand) {
-//		std::vector<std::filesystem::path> intermediatePaths;
-//		Utils::ExpandGlob(pathGlob, basePath, intermediatePaths);
-//		for (const auto& intPathLocal : intermediatePaths) {
-//			auto intPath = (basePath / intPathLocal).string();
-//			if (std::find(out.begin(), out.end(), intPath) == out.end()) {
-//				out.emplace_back(intPath);
-//			}
-//		}
-//	}
-//
-//	pathsToExpand = out;
-//}
-
-template<>
-void CheckAndPostprocessManifest<OptVecManifestProfile>(const std::string& currPath, OptVecManifestProfile& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestTargetProfile& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -397,8 +401,40 @@ void CheckAndPostprocessManifest<OptVecManifestProfile>(const std::string& currP
 	}
 }
 
-template<>
-void CheckAndPostprocessManifest<OptVecManifestExternalDependencies>(const std::string& currPath, OptVecManifestExternalDependencies& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestProfile& toCheck) {
+	if (!toCheck.has_value()) {
+		return;
+	}
+
+	for (auto& profile : *toCheck) {
+		if (!profile.name.has_value() || profile.name->empty()) {
+			throw std::runtime_error("Profile name cannot be empty");
+		}
+
+		std::filesystem::path base = currPath;
+		if (profile.path.has_value()) {
+			std::filesystem::path path = *profile.path;
+			if (!Utils::IsWeaklyCanonical(path)) {
+				profile.path = (base / path).string();
+			}
+		}
+		else {
+			profile.path = base.string();
+		}
+
+		std::map<std::string, std::string> vars;
+		if (profile.vars.has_value()) {
+			vars = *profile.vars;
+		}
+
+		if (profile.envFiles.has_value()) {
+			ParseEnvFiles(*profile.envFiles, *profile.path, vars);
+			profile.envFiles = std::nullopt;
+		}
+	}
+}
+
+void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestExternalDependencies& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -431,8 +467,7 @@ void CheckAndPostprocessManifest<OptVecManifestExternalDependencies>(const std::
 	}
 }
 
-template<>
-void CheckAndPostprocessManifest<OptManifestBridges>(const std::string& currPath, OptManifestBridges& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptManifestBridges& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -461,8 +496,7 @@ void CheckAndPostprocessManifest<OptManifestBridges>(const std::string& currPath
 	}
 }
 
-template<>
-void CheckAndPostprocessManifest<OptVecManifestTarget>(const std::string& currPath, OptVecManifestTarget& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestTarget& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -498,8 +532,7 @@ void CheckAndPostprocessManifest<OptVecManifestTarget>(const std::string& currPa
 	}
 }
 
-template<>
-void CheckAndPostprocessManifest<OptVecManifestProject>(const std::string& currPath, OptVecManifestProject& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestProject& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -536,8 +569,7 @@ void CheckAndPostprocessManifest<OptVecManifestProject>(const std::string& currP
 	}
 }
 
-template<>
-void CheckAndPostprocessManifest<OptManifestAutomation>(const std::string& currPath, OptManifestAutomation& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptManifestAutomation& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -566,8 +598,7 @@ void CheckAndPostprocessManifest<OptManifestAutomation>(const std::string& currP
 	}
 }
 
-template<>
-void CheckAndPostprocessManifest<OptVecManifestWorkspace>(const std::string& currPath, OptVecManifestWorkspace& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestWorkspace& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -604,8 +635,7 @@ void CheckAndPostprocessManifest<OptVecManifestWorkspace>(const std::string& cur
 	}
 }
 
-template<>
-void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, ManifestRoot& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, ManifestRoot& toCheck) {
 	auto& root = toCheck;
 
 	std::filesystem::path base = currPath;
@@ -635,8 +665,7 @@ void CheckAndPostprocessManifest<ManifestRoot>(const std::string& currPath, Mani
 	root.vars = vars;
 }
 
-template<>
-void EvaluateCentoVars<OptVecManifestProfile>(OptVecManifestProfile& toEvaluate) {
+void EvaluateCentoVars(OptVecManifestTargetProfile& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -656,12 +685,33 @@ void EvaluateCentoVars<OptVecManifestProfile>(OptVecManifestProfile& toEvaluate)
 		vars["CENTO_CURRENT_DIR"] = *profile.path;
 		vars["CENTO_PROFILE_DIR"] = *profile.path;
 		profile.vars = vars;
-		profile.path = std::nullopt;
 	}
 }
 
-template<>
-void EvaluateCentoVars<OptVecManifestExternalDependencies>(OptVecManifestExternalDependencies& toEvaluate) {
+void EvaluateCentoVars(OptVecManifestProfile& toEvaluate) {
+	if (!toEvaluate.has_value()) {
+		return;
+	}
+
+	for (auto& profile : *toEvaluate) {
+		std::map<std::string, std::string> vars;
+		if (profile.vars.has_value()) {
+			vars = *profile.vars;
+		}
+
+		std::optional<std::string> violatedVar = std::nullopt;
+		VerifyIfOverridesCentoVars(vars, violatedVar);
+		if (violatedVar.has_value()) {
+			throw std::runtime_error("Violated Cento variable: " + *violatedVar);
+		}
+
+		vars["CENTO_CURRENT_DIR"] = *profile.path;
+		vars["CENTO_PROFILE_DIR"] = *profile.path;
+		profile.vars = vars;
+	}
+}
+
+void EvaluateCentoVars(OptVecManifestExternalDependencies& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -681,12 +731,10 @@ void EvaluateCentoVars<OptVecManifestExternalDependencies>(OptVecManifestExterna
 		vars["CENTO_CURRENT_DIR"] = *externalDependency.path;
 		vars["CENTO_EXTERNAL_DEPENDENCY_DIR"] = *externalDependency.path;
 		externalDependency.vars = vars;
-		externalDependency.path = std::nullopt;
 	}
 }
 
-template<>
-void EvaluateCentoVars<OptManifestBridges>(OptManifestBridges& toEvaluate) {
+void EvaluateCentoVars(OptManifestBridges& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -707,11 +755,9 @@ void EvaluateCentoVars<OptManifestBridges>(OptManifestBridges& toEvaluate) {
 	vars["CENTO_CURRENT_DIR"] = *bridge.path;
 	vars["CENTO_BRIDGE_DIR"] = *bridge.path;
 	bridge.vars = vars;
-	bridge.path = std::nullopt;
 }
 
-template<>
-void EvaluateCentoVars<OptVecManifestTarget>(OptVecManifestTarget& toEvaluate) {
+void EvaluateCentoVars(OptVecManifestTarget& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -732,13 +778,13 @@ void EvaluateCentoVars<OptVecManifestTarget>(OptVecManifestTarget& toEvaluate) {
 		vars["CENTO_TARGET_DIR"] = *target.path;
 		vars["CENTO_CURRENT_PROFILE"] = target.defaultProfile.has_value() ? *target.defaultProfile : "";
 		target.vars = vars;
-		target.path = std::nullopt;
-		target.defaultProfile = std::nullopt;
+
+		EvaluateCentoVars(target.profiles);
+		EvaluateCentoVars(target.bridges);
 	}
 }
 
-template<>
-void EvaluateCentoVars<OptVecManifestProject>(OptVecManifestProject& toEvaluate) {
+void EvaluateCentoVars(OptVecManifestProject& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -760,14 +806,14 @@ void EvaluateCentoVars<OptVecManifestProject>(OptVecManifestProject& toEvaluate)
 		vars["CENTO_CURRENT_PROFILE"] = project.defaultProfile.has_value() ? *project.defaultProfile : "";
 		vars["CENTO_CURRENT_TARGET"] = project.startupTarget.has_value() ? *project.startupTarget : "";
 		project.vars = vars;
-		project.path = std::nullopt;
-		project.defaultProfile = std::nullopt;
-		project.startupTarget = std::nullopt;
+
+		EvaluateCentoVars(project.profiles);
+		EvaluateCentoVars(project.targets);
+		EvaluateCentoVars(project.externalDependencies);
 	}
 }
 
-template<>
-void EvaluateCentoVars<OptManifestAutomation>(OptManifestAutomation& toEvaluate) {
+void EvaluateCentoVars(OptManifestAutomation& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -788,11 +834,9 @@ void EvaluateCentoVars<OptManifestAutomation>(OptManifestAutomation& toEvaluate)
 	vars["CENTO_CURRENT_DIR"] = *automation.path;
 	vars["CENTO_AUTOMATION_DIR"] = *automation.path;
 	automation.vars = vars;
-	automation.path = std::nullopt;
 }
 
-template<>
-void EvaluateCentoVars<OptVecManifestWorkspace>(OptVecManifestWorkspace& toEvaluate) {
+void EvaluateCentoVars(OptVecManifestWorkspace& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -814,14 +858,14 @@ void EvaluateCentoVars<OptVecManifestWorkspace>(OptVecManifestWorkspace& toEvalu
 		vars["CENTO_CURRENT_PROFILE"] = workspace.defaultProfile.has_value() ? *workspace.defaultProfile : "";
 		vars["CENTO_CURRENT_PROJECT"] = workspace.startupProject.has_value() ? *workspace.startupProject : "";
 		workspace.vars = vars;
-		workspace.path = std::nullopt;
-		workspace.defaultProfile = std::nullopt;
-		workspace.startupProject = std::nullopt;
+
+		EvaluateCentoVars(workspace.profiles);
+		EvaluateCentoVars(workspace.projects);
+		EvaluateCentoVars(workspace.automation);
 	}
 }
 
-template<>
-void EvaluateCentoVars<ManifestRoot>(ManifestRoot& toEvaluate) {
+void EvaluateCentoVars(ManifestRoot& toEvaluate) {
 	auto& root = toEvaluate;
 
 	std::map<std::string, std::string> vars;
@@ -841,267 +885,9 @@ void EvaluateCentoVars<ManifestRoot>(ManifestRoot& toEvaluate) {
 	vars["CENTO_CURRENT_WORKSPACE"] = root.startupWorkspace.has_value() ? *root.startupWorkspace : "";
 
 	root.vars = vars;
-	root.path = std::nullopt;
-	root.defaultProfile = std::nullopt;
-	root.startupWorkspace = std::nullopt;
-}
 
-template<>
-void CollapseProfiles<OptVecManifestTarget>(OptVecManifestTarget& toCollapse) {
-
-}
-
-template<>
-void CollapseProfiles<OptVecManifestProject>(OptVecManifestProject& toCollapse) {
-
-}
-
-template<>
-void CollapseProfiles<OptVecManifestWorkspace>(OptVecManifestWorkspace& toCollapse) {
-
-}
-
-template<>
-void CollapseProfiles<ManifestRoot>(ManifestRoot& toCollapse) {
-	if (toCollapse.profiles.has_value()) {
-	}
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestTarget, OptVecManifestProfile>(const ManifestTarget& parent, OptVecManifestProfile& child) {
-	if (!parent.profiles.has_value()) {
-		return;
-	}
-	std::map<std::string, ManifestProfile> profileMap;
-	for (auto& plhs : *parent.profiles) {
-		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	if (child.has_value()) {
-		for (const auto& prhs : *child) {
-			auto name = prhs.name.has_value() ? *prhs.name : "";
-			auto it = profileMap.find(name);
-			if (it != profileMap.end()) {
-				auto& plhs = it->second;
-
-				plhs.vars = MergeManifest(plhs.vars, prhs.vars);
-				plhs.path = MergeManifest(plhs.path, prhs.path);
-				plhs.name = MergeManifest(plhs.name, prhs.name);
-				plhs.sources = MergeManifest(plhs.sources, prhs.sources);
-				plhs.includeDirs = MergeManifest(plhs.includeDirs, prhs.includeDirs);
-				plhs.compilerOptions = MergeManifest(plhs.compilerOptions, prhs.compilerOptions);
-				plhs.intDir = MergeManifest(plhs.intDir, prhs.intDir);
-				plhs.outDir = MergeManifest(plhs.outDir, prhs.outDir);
-				plhs.bridges = MergeManifest(plhs.bridges, prhs.bridges);
-			}
-			else {
-				profileMap[name] = prhs;
-			}
-		}
-	}
-
-	std::vector<ManifestProfile> out;
-	for (const auto& [key, value] : profileMap) {
-		out.emplace_back(value);
-	}
-
-	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestTarget, OptManifestBridges>(const ManifestTarget& parent, OptManifestBridges& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	child->vars = MergeManifest(parent.vars, child->vars);
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestProject, OptVecManifestProfile>(const ManifestProject& parent, OptVecManifestProfile& child) {
-	if (!parent.profiles.has_value()) {
-		return;
-	}
-	std::map<std::string, ManifestProfile> profileMap;
-	for (auto& plhs : *parent.profiles) {
-		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	if (child.has_value()) {
-		for (const auto& prhs : *child) {
-			auto name = prhs.name.has_value() ? *prhs.name : "";
-			auto it = profileMap.find(name);
-			if (it != profileMap.end()) {
-				auto& plhs = it->second;
-
-				plhs.vars = MergeManifest(plhs.vars, prhs.vars);
-				plhs.path = MergeManifest(plhs.path, prhs.path);
-				plhs.name = MergeManifest(plhs.name, prhs.name);
-				plhs.sources = MergeManifest(plhs.sources, prhs.sources);
-				plhs.includeDirs = MergeManifest(plhs.includeDirs, prhs.includeDirs);
-				plhs.compilerOptions = MergeManifest(plhs.compilerOptions, prhs.compilerOptions);
-				plhs.intDir = MergeManifest(plhs.intDir, prhs.intDir);
-				plhs.outDir = MergeManifest(plhs.outDir, prhs.outDir);
-				plhs.bridges = MergeManifest(plhs.bridges, prhs.bridges);
-			}
-			else {
-				profileMap[name] = prhs;
-			}
-		}
-	}
-
-	std::vector<ManifestProfile> out;
-	for (const auto& [key, value] : profileMap) {
-		out.emplace_back(value);
-	}
-
-	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestProject, OptVecManifestExternalDependencies>(const ManifestProject& parent, OptVecManifestExternalDependencies& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	for (auto& externalDependencies : *child) {
-		externalDependencies.vars = MergeManifest(parent.vars, externalDependencies.vars);
-	}
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestProject, OptVecManifestTarget>(const ManifestProject& parent, OptVecManifestTarget& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	for (auto& target : *child) {
-		target.vars = MergeManifest(parent.vars, target.vars);
-		target.defaultProfile = MergeManifest(parent.defaultProfile, target.defaultProfile);
-	}
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProfile>(const ManifestWorkspace& parent, OptVecManifestProfile& child) {
-	if (!parent.profiles.has_value()) {
-		return;
-	}
-	std::map<std::string, ManifestProfile> profileMap;
-	for (auto& plhs : *parent.profiles) {
-		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	if (child.has_value()) {
-		for (const auto& prhs : *child) {
-			auto name = prhs.name.has_value() ? *prhs.name : "";
-			auto it = profileMap.find(name);
-			if (it != profileMap.end()) {
-				auto& plhs = it->second;
-
-				plhs.vars = MergeManifest(plhs.vars, prhs.vars);
-				plhs.path = MergeManifest(plhs.path, prhs.path);
-				plhs.name = MergeManifest(plhs.name, prhs.name);
-				plhs.sources = MergeManifest(plhs.sources, prhs.sources);
-				plhs.includeDirs = MergeManifest(plhs.includeDirs, prhs.includeDirs);
-				plhs.compilerOptions = MergeManifest(plhs.compilerOptions, prhs.compilerOptions);
-				plhs.intDir = MergeManifest(plhs.intDir, prhs.intDir);
-				plhs.outDir = MergeManifest(plhs.outDir, prhs.outDir);
-				plhs.bridges = MergeManifest(plhs.bridges, prhs.bridges);
-			}
-			else {
-				profileMap[name] = prhs;
-			}
-		}
-	}
-
-	std::vector<ManifestProfile> out;
-	for (const auto& [key, value] : profileMap) {
-		out.emplace_back(value);
-	}
-
-	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestWorkspace, OptManifestAutomation>(const ManifestWorkspace& parent, OptManifestAutomation& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	child->vars = MergeManifest(parent.vars, child->vars);
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestWorkspace, OptVecManifestProject>(const ManifestWorkspace& parent, OptVecManifestProject& child) {
-	if (!child.has_value()) {
-		return;
-	}
-	for (auto& project : *child) {
-		project.vars = MergeManifest(parent.vars, project.vars);
-		project.defaultProfile = MergeManifest(parent.defaultProfile, project.defaultProfile);
-
-		PropagateVarsAndProfiles(parent, project.profiles);
-		PropagateVarsAndProfiles(project, project.targets);
-		PropagateVarsAndProfiles(project, project.externalDependencies);
-	}
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestRoot, OptVecManifestProfile>(const ManifestRoot& parent, OptVecManifestProfile& child) {
-	if (!parent.profiles.has_value()) {
-		return;
-	}
-	std::map<std::string, ManifestProfile> profileMap;
-	for (auto& plhs : *parent.profiles) {
-		profileMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
-	}
-
-	if (child.has_value()) {
-		for (const auto& prhs : *child) {
-			auto name = prhs.name.has_value() ? *prhs.name : "";
-			auto it = profileMap.find(name);
-			if (it != profileMap.end()) {
-				auto& plhs = it->second;
-
-				plhs.vars = MergeManifest(plhs.vars, prhs.vars);
-				plhs.path = MergeManifest(plhs.path, prhs.path);
-				plhs.name = MergeManifest(plhs.name, prhs.name);
-				plhs.sources = MergeManifest(plhs.sources, prhs.sources);
-				plhs.includeDirs = MergeManifest(plhs.includeDirs, prhs.includeDirs);
-				plhs.compilerOptions = MergeManifest(plhs.compilerOptions, prhs.compilerOptions);
-				plhs.intDir = MergeManifest(plhs.intDir, prhs.intDir);
-				plhs.outDir = MergeManifest(plhs.outDir, prhs.outDir);
-				plhs.bridges = MergeManifest(plhs.bridges, prhs.bridges);
-			}
-			else {
-				profileMap[name] = prhs;
-			}
-		}
-	}
-
-	std::vector<ManifestProfile> out;
-	for (const auto& [key, value] : profileMap) {
-		out.emplace_back(value);
-	}
-
-	child = out.empty() ? std::nullopt : OptVecManifestProfile(out);
-}
-
-template<>
-void PropagateVarsAndProfiles<ManifestRoot, OptVecManifestWorkspace>(const ManifestRoot& parent, OptVecManifestWorkspace& child) {
-	if (!child.has_value()) {
-		return;
-	}
-
-	for (auto& workspace : *child) {
-		workspace.vars = MergeManifest(parent.vars, workspace.vars);
-		workspace.defaultProfile = MergeManifest(parent.defaultProfile, workspace.defaultProfile);
-
-		PropagateVarsAndProfiles(parent, workspace.profiles);
-		PropagateVarsAndProfiles(workspace, workspace.automation);
-		PropagateVarsAndProfiles(workspace, workspace.projects);
-	}
-}
-
-void PropagateVarsAndProfiles(ManifestRoot& child) {
-	PropagateVarsAndProfiles(child, child.profiles);
-	PropagateVarsAndProfiles(child, child.workspaces);
+	EvaluateCentoVars(root.profiles);
+	EvaluateCentoVars(root.workspaces);
 }
 
 OptMapStrStr ManifestExpandVars(const OptMapStrStr vars, const OptMapStrStr& toExpand)
@@ -1141,8 +927,20 @@ OptVecStr ManifestExpandVars(const OptMapStrStr& vars, const OptVecStr& toExpand
 	return out;
 }
 
-template<>
-void ManifestExpandVars<OptVecManifestProfile>(OptVecManifestProfile& toExpand)
+void ManifestExpandVars(OptManifestBridges& toExpand) {
+	if (!toExpand.has_value()) {
+		return;
+	}
+
+	toExpand->vars = ManifestExpandVars(toExpand->vars, toExpand->vars);
+	toExpand->path = ManifestExpandVars(toExpand->vars, toExpand->path);
+	toExpand->uses = ManifestExpandVars(toExpand->vars, toExpand->uses);
+	toExpand->implements = ManifestExpandVars(toExpand->vars, toExpand->implements);
+
+	toExpand->vars = std::nullopt;
+}
+
+void ManifestExpandVars(OptVecManifestTargetProfile& toExpand)
 {
 	if (!toExpand.has_value()) {
 		return;
@@ -1163,8 +961,22 @@ void ManifestExpandVars<OptVecManifestProfile>(OptVecManifestProfile& toExpand)
 	}
 }
 
-template<>
-void ManifestExpandVars<OptVecManifestExternalDependencies>(OptVecManifestExternalDependencies& toExpand)
+void ManifestExpandVars(OptVecManifestProfile& toExpand)
+{
+	if (!toExpand.has_value()) {
+		return;
+	}
+
+	for (auto& profile : *toExpand) {
+		profile.vars = ManifestExpandVars(profile.vars, profile.vars);
+		profile.path = ManifestExpandVars(profile.vars, profile.path);
+		profile.name = ManifestExpandVars(profile.vars, profile.name);
+
+		profile.vars = std::nullopt;
+	}
+}
+
+void ManifestExpandVars(OptVecManifestExternalDependencies& toExpand)
 {
 	if (!toExpand.has_value()) {
 		return;
@@ -1186,22 +998,7 @@ void ManifestExpandVars<OptVecManifestExternalDependencies>(OptVecManifestExtern
 	}
 }
 
-template<>
-void ManifestExpandVars<OptManifestBridges>(OptManifestBridges& toExpand) {
-	if (!toExpand.has_value()) {
-		return;
-	}
-
-	toExpand->vars = ManifestExpandVars(toExpand->vars, toExpand->vars);
-	toExpand->path = ManifestExpandVars(toExpand->vars, toExpand->path);
-	toExpand->uses = ManifestExpandVars(toExpand->vars, toExpand->uses);
-	toExpand->implements = ManifestExpandVars(toExpand->vars, toExpand->implements);
-
-	toExpand->vars = std::nullopt;
-}
-
-template<>
-void ManifestExpandVars<OptVecManifestTarget>(OptVecManifestTarget& toExpand)
+void ManifestExpandVars(OptVecManifestTarget& toExpand)
 {
 	if (!toExpand.has_value()) {
 		return;
@@ -1227,8 +1024,7 @@ void ManifestExpandVars<OptVecManifestTarget>(OptVecManifestTarget& toExpand)
 	}
 }
 
-template<>
-void ManifestExpandVars<OptVecManifestProject>(OptVecManifestProject& toExpand)
+void ManifestExpandVars(OptVecManifestProject& toExpand)
 {
 	if (!toExpand.has_value()) {
 		return;
@@ -1239,7 +1035,6 @@ void ManifestExpandVars<OptVecManifestProject>(OptVecManifestProject& toExpand)
 		project.path = ManifestExpandVars(project.vars, project.path);
 		project.name = ManifestExpandVars(project.vars, project.name);
 		ManifestExpandVars(project.profiles);
-		project.dependsOn = ManifestExpandVars(project.vars, project.dependsOn);
 		ManifestExpandVars(project.externalDependencies);
 		project.startupTarget = ManifestExpandVars(project.vars, project.startupTarget);
 		ManifestExpandVars(project.targets);
@@ -1248,8 +1043,7 @@ void ManifestExpandVars<OptVecManifestProject>(OptVecManifestProject& toExpand)
 	}
 }
 
-template<>
-void ManifestExpandVars<OptManifestAutomation>(OptManifestAutomation& toExpand) {
+void ManifestExpandVars(OptManifestAutomation& toExpand) {
 	if (!toExpand.has_value()) {
 		return;
 	}
@@ -1263,8 +1057,7 @@ void ManifestExpandVars<OptManifestAutomation>(OptManifestAutomation& toExpand) 
 	toExpand->vars = std::nullopt;
 }
 
-template<>
-void ManifestExpandVars<OptVecManifestWorkspace>(OptVecManifestWorkspace& toExpand) {
+void ManifestExpandVars(OptVecManifestWorkspace& toExpand) {
 	if (!toExpand.has_value()) {
 		return;
 	}
@@ -1282,8 +1075,7 @@ void ManifestExpandVars<OptVecManifestWorkspace>(OptVecManifestWorkspace& toExpa
 	}
 }
 
-template<>
-void ManifestExpandVars<ManifestRoot>(ManifestRoot& toExpand) {
+void ManifestExpandVars(ManifestRoot& toExpand) {
 	toExpand.vars = ManifestExpandVars(toExpand.vars, toExpand.vars);
 	toExpand.path = ManifestExpandVars(toExpand.vars, toExpand.path);
 	ManifestExpandVars(toExpand.profiles);
@@ -1292,4 +1084,335 @@ void ManifestExpandVars<ManifestRoot>(ManifestRoot& toExpand) {
 	toExpand.startupWorkspace = ManifestExpandVars(toExpand.vars, toExpand.startupWorkspace);
 
 	toExpand.vars = std::nullopt;
+}
+
+void CollapseProfiles(ManifestTarget& toCollapse) {
+	if (toCollapse.profiles.has_value() && toCollapse.defaultProfile.has_value()) {
+		auto defaultProfile = ManifestExpandVars(toCollapse.vars, toCollapse.defaultProfile);
+		for (const auto& profile : *toCollapse.profiles) {
+			if (*profile.name == defaultProfile) {
+				toCollapse.vars = MergeManifest(toCollapse.vars, profile.vars);
+				toCollapse.sources = MergeManifest(toCollapse.sources, profile.sources);
+				toCollapse.includeDirs = MergeManifest(toCollapse.includeDirs, profile.includeDirs);
+				toCollapse.compilerOptions = MergeManifest(toCollapse.compilerOptions, profile.compilerOptions);
+				toCollapse.intDir = MergeManifest(toCollapse.intDir, profile.intDir);
+				toCollapse.outDir = MergeManifest(toCollapse.outDir, profile.outDir);
+				toCollapse.bridges = MergeManifest(toCollapse.bridges, profile.bridges);
+				break;
+			}
+		}
+	}
+
+	toCollapse.profiles = std::nullopt;
+	toCollapse.defaultProfile = std::nullopt;
+}
+
+void CollapseProfiles(ManifestProject& toCollapse) {
+	if (toCollapse.profiles.has_value() && toCollapse.defaultProfile.has_value()) {
+		auto defaultProfile = ManifestExpandVars(toCollapse.vars, toCollapse.defaultProfile);
+		for (const auto& profile : *toCollapse.profiles) {
+			if (*profile.name == defaultProfile) {
+				toCollapse.vars = MergeManifest(toCollapse.vars, profile.vars);
+				break;
+			}
+		}
+	}
+
+	toCollapse.profiles = std::nullopt;
+	toCollapse.defaultProfile = std::nullopt;
+}
+
+void CollapseProfiles(ManifestWorkspace& toCollapse) {
+	if (toCollapse.profiles.has_value() && toCollapse.defaultProfile.has_value()) {
+		auto defaultProfile = ManifestExpandVars(toCollapse.vars, toCollapse.defaultProfile);
+		for (const auto& profile : *toCollapse.profiles) {
+			if (*profile.name == defaultProfile) {
+				toCollapse.vars = MergeManifest(toCollapse.vars, profile.vars);
+				break;
+			}
+		}
+	}
+
+	toCollapse.profiles = std::nullopt;
+	toCollapse.defaultProfile = std::nullopt;
+}
+
+void CollapseProfiles(ManifestRoot& toCollapse) {
+	if (toCollapse.profiles.has_value() && toCollapse.defaultProfile.has_value()) {
+		auto defaultProfile = ManifestExpandVars(toCollapse.vars, toCollapse.defaultProfile);
+		for (const auto& profile : *toCollapse.profiles) {
+			if (*profile.name == defaultProfile) {
+				toCollapse.vars = MergeManifest(toCollapse.vars, profile.vars);
+				break;
+			}
+		}
+	}
+
+	toCollapse.profiles = std::nullopt;
+}
+
+void PropagateVars(const ManifestTarget& parent, OptManifestBridges& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	child->vars = MergeManifest(parent.vars, child->vars);
+}
+
+void PropagateVars(const ManifestProject& parent, OptVecManifestExternalDependencies& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	for (auto& externalDependencies : *child) {
+		externalDependencies.vars = MergeManifest(parent.vars, externalDependencies.vars);
+	}
+}
+
+void PropagateVars(const ManifestProject& parent, OptVecManifestTarget& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	for (auto& target : *child) {
+		target.vars = MergeManifest(parent.vars, target.vars);
+		target.defaultProfile = MergeManifest(parent.defaultProfile, target.defaultProfile);
+
+		CollapseProfiles(target);
+		PropagateVars(target, target.bridges);
+	}
+}
+
+void PropagateVars(const ManifestWorkspace& parent, OptManifestAutomation& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	child->vars = MergeManifest(parent.vars, child->vars);
+}
+
+void PropagateVars(const ManifestWorkspace& parent, OptVecManifestProject& child) {
+	if (!child.has_value()) {
+		return;
+	}
+	for (auto& project : *child) {
+		project.vars = MergeManifest(parent.vars, project.vars);
+		project.defaultProfile = MergeManifest(parent.defaultProfile, project.defaultProfile);
+
+		CollapseProfiles(project);
+		PropagateVars(project, project.externalDependencies);
+		PropagateVars(project, project.targets);
+	}
+}
+
+void PropagateVars(const ManifestRoot& parent, OptVecManifestWorkspace& child) {
+	if (!child.has_value()) {
+		return;
+	}
+
+	for (auto& workspace : *child) {
+		workspace.vars = MergeManifest(parent.vars, workspace.vars);
+		workspace.defaultProfile = MergeManifest(parent.defaultProfile, workspace.defaultProfile);
+
+		CollapseProfiles(workspace);
+		PropagateVars(workspace, workspace.automation);
+		PropagateVars(workspace, workspace.projects);
+	}
+}
+
+void PropagateVars(ManifestRoot& child) {
+	CollapseProfiles(child);
+	PropagateVars(child, child.workspaces);
+
+	child.defaultProfile = std::nullopt;
+}
+
+void DumpManifest(int offset, const OptMapStrStr& toExpand) {
+	if (!toExpand.has_value()) {
+		std::cout << "{}";
+		return;
+	}
+	int i = 0;
+	std::cout << "{ ";
+	for (const auto& [key, val] : *toExpand) {
+		if (i != 0) {
+			std::cout << ", ";
+		}
+		std::cout << key << " : \"" << val + "\"";
+		i++;
+	}
+	std::cout << " }";
+}
+
+void DumpManifest(int offset, const OptStr& toExpand) {
+	if (!toExpand.has_value()) {
+		std::cout << "\"\"";
+		return;
+	}
+	std::cout << "\"" << *toExpand << "\"";
+}
+
+void DumpManifest(int offset, const OptVecStr& toExpand) {
+	if (!toExpand.has_value()) {
+		std::cout << "[]";
+		return;
+	}
+	int i = 0;
+	std::cout << "[";
+	for (const auto& val : *toExpand) {
+		if (i != 0) {
+			std::cout << ", ";
+		}
+		std::cout << "\"" << val << "\"";
+		i++;
+	}
+	std::cout << "]";
+}
+inline std::string Indent(int levels, int spacesPerLevel = 2) {
+	if (levels <= 0) return {};
+	return std::string(static_cast<size_t>(levels) * spacesPerLevel, ' ');
+}
+
+#define DUMP(LABEL, FIELD)						\
+	std::cout << Indent(offset) << LABEL ": ";	\
+    DumpManifest(offset + 1, FIELD);			\
+    std::cout << '\n'; 
+
+void DumpManifest(int offset, const OptManifestBridges& toExpand) {
+	if (!toExpand.has_value()) return;
+	auto& bridge = *toExpand;
+	std::cout << "{\n";
+	DUMP("vars", bridge.vars);
+	DUMP("path", bridge.path);
+	DUMP("envFiles", bridge.envFiles);
+	DUMP("uses", bridge.uses);
+	DUMP("implements", bridge.implements);
+	std::cout << Indent(offset) <<  "}";
+}
+
+void DumpManifest(int offset, const OptVecManifestTargetProfile& toExpand) {
+	if (!toExpand.has_value()) return;
+	std::cout << "{\n";
+	for (const auto& profile : *toExpand) {
+		DUMP("vars", profile.vars);
+		DUMP("path", profile.path);
+		DUMP("envFiles", profile.envFiles);
+		DUMP("name", profile.name);
+		DUMP("sources", profile.sources);
+		DUMP("includeDirs", profile.includeDirs);
+		DUMP("compilerOptions", profile.compilerOptions);
+		DUMP("intDir", profile.intDir);
+		DUMP("outDir", profile.outDir);
+		DUMP("bridges", profile.bridges);
+	}
+	std::cout << Indent(offset) << "}";
+}
+
+void DumpManifest(int offset, const OptVecManifestProfile& toExpand) {
+	if (!toExpand.has_value()) return;
+	std::cout << "{\n";
+	for (const auto& profile : *toExpand) {
+		DUMP("vars", profile.vars);
+		DUMP("path", profile.path);
+		DUMP("envFiles", profile.envFiles);
+		DUMP("name", profile.name);
+	}
+	std::cout << Indent(offset) << "}";
+}
+
+void DumpManifest(int offset, const OptVecManifestTarget& toExpand) {
+	if (!toExpand.has_value()) return;
+	std::cout << "{\n";
+	for (const auto& target : *toExpand) {
+		DUMP("vars", target.vars);
+		DUMP("path", target.path);
+		DUMP("envFiles", target.envFiles);
+		DUMP("name", target.name);
+		DUMP("profiles", target.profiles);
+		DUMP("defaultProfile", target.defaultProfile);
+		DUMP("type", target.type);
+		DUMP("language", target.language);
+		DUMP("toolchain", target.toolchain);
+		DUMP("link", target.link);
+		DUMP("sources", target.sources);
+		DUMP("includeDirs", target.includeDirs);
+		DUMP("compilerOptions", target.compilerOptions);
+		DUMP("intDir", target.intDir);
+		DUMP("outDir", target.outDir);
+		DUMP("bridges", target.bridges);
+	}
+	std::cout << Indent(offset) << "}";
+}
+
+void DumpManifest(int offset, const OptVecManifestExternalDependencies& toExpand) {
+	if (!toExpand.has_value()) return;
+	std::cout << "{\n";
+	for (const auto& externalDependency : *toExpand) {
+		DUMP("vars", externalDependency.vars);
+		DUMP("path", externalDependency.path);
+		DUMP("envFiles", externalDependency.envFiles);
+		DUMP("toolchain", externalDependency.toolchain);
+		DUMP("name", externalDependency.name);
+		DUMP("version", externalDependency.version);
+		DUMP("url", externalDependency.url);
+		DUMP("branch", externalDependency.branch);
+		DUMP("resolveFirst", externalDependency.resolveFirst);
+		DUMP("buildsystem", externalDependency.buildsystem);
+		DUMP("buildArgs", externalDependency.buildArgs);
+	}
+	std::cout << Indent(offset) << "}";
+}
+
+void DumpManifest(int offset, const OptVecManifestProject& toExpand) {
+	if (!toExpand.has_value()) return;
+	std::cout << "{\n";
+	for (const auto& project : *toExpand) {
+		DUMP("vars", project.vars);
+		DUMP("path", project.path);
+		DUMP("envFiles", project.envFiles);
+		DUMP("name", project.name);
+		DUMP("profiles", project.profiles);
+		DUMP("defaultProfile", project.defaultProfile);
+		DUMP("externalDependencies", project.externalDependencies);
+		DUMP("startupTarget", project.startupTarget);
+		DUMP("targets", project.targets);
+	}
+	std::cout << Indent(offset) << "}";
+}
+
+void DumpManifest(int offset, const OptManifestAutomation& toExpand) {
+	if (!toExpand.has_value()) return;
+	auto& automation = *toExpand;
+	std::cout << "{\n";
+	DUMP("vars", automation.vars);
+	DUMP("path", automation.path);
+	DUMP("envFiles", automation.envFiles);
+	DUMP("script", automation.script);
+	DUMP("hooks", automation.hooks);
+	DUMP("actions", automation.actions);
+	std::cout << Indent(offset) << "}";
+}
+
+void DumpManifest(int offset, const OptVecManifestWorkspace& toExpand) {
+	if (!toExpand.has_value()) return;
+	std::cout << "{\n";
+	for (const auto& workspace : *toExpand) {
+		DUMP("vars", workspace.vars);
+		DUMP("path", workspace.path);
+		DUMP("envFiles", workspace.envFiles);
+		DUMP("name", workspace.name);
+		DUMP("profiles", workspace.profiles);
+		DUMP("defaultProfile", workspace.defaultProfile);
+		DUMP("startupProject", workspace.startupProject);
+		DUMP("projects", workspace.projects);
+		DUMP("automation", workspace.automation);
+	}
+	std::cout << Indent(offset) << "}";
+}
+
+void DumpManifest(int offset, const ManifestRoot& toExpand) {
+	DUMP("vars", toExpand.vars);
+	DUMP("path", toExpand.path);
+	DUMP("envFiles", toExpand.envFiles);
+	DUMP("profiles", toExpand.profiles);
+	DUMP("defaultProfile", toExpand.defaultProfile);
+	DUMP("includes", toExpand.includes);
+	DUMP("startupWorkspace", toExpand.startupWorkspace);
+	DUMP("workspaces", toExpand.workspaces);
 }

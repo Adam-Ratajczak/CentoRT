@@ -1,0 +1,3 @@
+includes:
+  - core/core.yaml
+  - libs/libs.yaml

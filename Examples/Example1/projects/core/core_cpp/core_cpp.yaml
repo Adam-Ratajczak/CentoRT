@@ -4,6 +4,13 @@ workspaces:
       - name: core
         targets:
           - name: libcore
+            profiles:
+              - name: dev
+                compilerOptions: ["-O2", "-Wall"]
+              - name: debug
+                compilerOptions: ["-O2", "-Wall"]
+              - name: release
+                compilerOptions: ["-O2", "-Wall"]
             type: dylib
             language: cpp
             toolchain: gcc
@@ -13,5 +20,5 @@ workspaces:
             intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/core"
             outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
             bridges:
-                implements: ["{$CENTO_WORKSPACE_DIR}/idl/core/**/*.idl"]
-                uses: ["{$CENTO_WORKSPACE_DIR}/idl/app/**/*.idl", "{$CENTO_WORKSPACE_DIR}/idl/math/**/*.idl", "{$CENTO_WORKSPACE_DIR}/idl/go/**/*.idl"]
+                implements: ["${CENTO_WORKSPACE_DIR}/idl/core/**/*.idl"]
+                uses: ["${CENTO_WORKSPACE_DIR}/idl/app/**/*.idl", "${CENTO_WORKSPACE_DIR}/idl/math/**/*.idl", "${CENTO_WORKSPACE_DIR}/idl/go/**/*.idl"]

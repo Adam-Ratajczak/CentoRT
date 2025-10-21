@@ -1,5 +1,8 @@
+includes:
+  - math_rs/math_rs.yaml
+  - net_go/net_go.yaml
+
 workspaces:
   - name: workspace
     projects:
       - name: libs
-        dependsOn: []

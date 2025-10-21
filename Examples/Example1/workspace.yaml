@@ -1,11 +1,11 @@
 includes:
   - common/*.yaml
-  - projects/**/*.yaml
+  - projects/projects.yaml
 
 startupWorkspace: workspace
+defaultProfile: ${DEFAULT_PROFILE}
 workspaces:
   - name: workspace
-    defaultProfile: ${DEFAULT_PROFILE}
     startupProject: ${DEFAULT_PROJECT}
     automation:
         script: tools/automation.py

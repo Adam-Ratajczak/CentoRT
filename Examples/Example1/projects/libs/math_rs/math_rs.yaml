@@ -12,5 +12,5 @@ workspaces:
             intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/math"
             outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
             bridges:
-                implements: ["{$CENTO_WORKSPACE_DIR}/idl/math/**/*.idl"]
+                implements: ["${CENTO_WORKSPACE_DIR}/idl/math/**/*.idl"]
                 uses: []
