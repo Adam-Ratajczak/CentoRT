@@ -6,4 +6,4 @@ workspaces:
   - name: workspace
     projects:
       - name: core
-        startupTarget: app
+        startupTarget: ${DEFAULT_TARGET}

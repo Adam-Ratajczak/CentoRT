@@ -8,7 +8,7 @@ workspaces:
               - name: dev
                 compilerOptions: ["-O2", "-Wall"]
               - name: debug
-                compilerOptions: ["-O2", "-Wall"]
+                compilerOptions: ["-O1", "-Wall"]
               - name: release
                 compilerOptions: ["-O2", "-Wall"]
             type: dylib

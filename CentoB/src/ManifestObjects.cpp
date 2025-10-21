@@ -1104,7 +1104,6 @@ void CollapseProfiles(ManifestTarget& toCollapse) {
 	}
 
 	toCollapse.profiles = std::nullopt;
-	toCollapse.defaultProfile = std::nullopt;
 }
 
 void CollapseProfiles(ManifestProject& toCollapse) {
@@ -1119,7 +1118,6 @@ void CollapseProfiles(ManifestProject& toCollapse) {
 	}
 
 	toCollapse.profiles = std::nullopt;
-	toCollapse.defaultProfile = std::nullopt;
 }
 
 void CollapseProfiles(ManifestWorkspace& toCollapse) {
@@ -1134,7 +1132,6 @@ void CollapseProfiles(ManifestWorkspace& toCollapse) {
 	}
 
 	toCollapse.profiles = std::nullopt;
-	toCollapse.defaultProfile = std::nullopt;
 }
 
 void CollapseProfiles(ManifestRoot& toCollapse) {
@@ -1219,8 +1216,6 @@ void PropagateVars(const ManifestRoot& parent, OptVecManifestWorkspace& child) {
 void PropagateVars(ManifestRoot& child) {
 	CollapseProfiles(child);
 	PropagateVars(child, child.workspaces);
-
-	child.defaultProfile = std::nullopt;
 }
 
 void DumpManifest(int offset, const OptMapStrStr& toExpand) {
