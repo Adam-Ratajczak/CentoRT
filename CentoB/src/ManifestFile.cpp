@@ -1,5 +1,6 @@
 #include "ManifestFile.hpp"
 #include "Utils.hpp"
+#include "TargetObjectStack.hpp"
 
 void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
     _error = std::nullopt;
@@ -20,7 +21,9 @@ void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
         EvaluateCentoVars(mergedManifest);
         PropagateVars(mergedManifest);
         ManifestExpandVars(mergedManifest);
-        DumpManifest(0, mergedManifest);
+
+        TargetObjectStack stack(mergedManifest);
+        stack.BuildTargetsAndTasks();
     }
     catch (std::exception& e) {
         _error = e.what();

@@ -146,11 +146,11 @@ OptVecManifestProfile MergeManifest(const OptVecManifestProfile& lhs, const OptV
 	return out;
 }
 
-OptVecManifestExternalDependencies MergeManifest(const OptVecManifestExternalDependencies& lhs, const OptVecManifestExternalDependencies& rhs)
+OptVecManifestExternalDependency MergeManifest(const OptVecManifestExternalDependency& lhs, const OptVecManifestExternalDependency& rhs)
 {
 	GUARD_OPTIONALS
 
-	std::map<std::string, ManifestExternalDependencies> externalDependenciesMap;
+	std::map<std::string, ManifestExternalDependency> externalDependenciesMap;
 	for (auto& plhs : *lhs) {
 		externalDependenciesMap[plhs.name.has_value() ? *plhs.name : ""] = plhs;
 	}
@@ -178,7 +178,7 @@ OptVecManifestExternalDependencies MergeManifest(const OptVecManifestExternalDep
 		}
 	}
 
-	std::vector<ManifestExternalDependencies> out;
+	std::vector<ManifestExternalDependency> out;
 	for (const auto& [key, value] : externalDependenciesMap) {
 		out.emplace_back(value);
 	}
@@ -206,6 +206,7 @@ OptVecManifestTarget MergeManifest(const OptVecManifestTarget& lhs, const OptVec
 			plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
 			plhs.name = MergeManifest(plhs.name, prhs.name);
 			plhs.profiles = MergeManifest(plhs.profiles, prhs.profiles);
+			plhs.defaultProfile = MergeManifest(plhs.defaultProfile, prhs.defaultProfile);
 			plhs.type = MergeManifest(plhs.type, prhs.type);
 			plhs.language = MergeManifest(plhs.language, prhs.language);
 			plhs.toolchain = MergeManifest(plhs.toolchain, prhs.toolchain);
@@ -250,6 +251,7 @@ OptVecManifestProject MergeManifest(const OptVecManifestProject& lhs, const OptV
 			plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
 			plhs.name = MergeManifest(plhs.name, prhs.name);
 			plhs.profiles = MergeManifest(plhs.profiles, prhs.profiles);
+			plhs.defaultProfile = MergeManifest(plhs.defaultProfile, prhs.defaultProfile);
 			plhs.externalDependencies = MergeManifest(plhs.externalDependencies, prhs.externalDependencies);
 			plhs.startupTarget = MergeManifest(plhs.startupTarget, prhs.startupTarget);
 			plhs.targets = MergeManifest(plhs.targets, prhs.targets);
@@ -323,10 +325,10 @@ ManifestRoot MergeManifest(const ManifestRoot& lhs, const ManifestRoot& rhs)
 	out.path = MergeManifest(lhs.path, rhs.path);
 	out.envFiles = MergeManifest(lhs.envFiles, rhs.envFiles);
 	out.profiles = MergeManifest(lhs.profiles, rhs.profiles);
-	out.includes = MergeManifest(lhs.includes, rhs.includes);
-	out.workspaces = MergeManifest(lhs.workspaces, rhs.workspaces);
 	out.defaultProfile = MergeManifest(lhs.defaultProfile, rhs.defaultProfile);
+	out.includes = MergeManifest(lhs.includes, rhs.includes);
 	out.startupWorkspace = MergeManifest(lhs.startupWorkspace, rhs.startupWorkspace);
+	out.workspaces = MergeManifest(lhs.workspaces, rhs.workspaces);
 
 	return out;
 }
@@ -434,7 +436,7 @@ void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestProf
 	}
 }
 
-void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestExternalDependencies& toCheck) {
+void CheckAndPostprocessManifest(const std::string& currPath, OptVecManifestExternalDependency& toCheck) {
 	if (!toCheck.has_value()) {
 		return;
 	}
@@ -711,7 +713,7 @@ void EvaluateCentoVars(OptVecManifestProfile& toEvaluate) {
 	}
 }
 
-void EvaluateCentoVars(OptVecManifestExternalDependencies& toEvaluate) {
+void EvaluateCentoVars(OptVecManifestExternalDependency& toEvaluate) {
 	if (!toEvaluate.has_value()) {
 		return;
 	}
@@ -937,7 +939,7 @@ void ManifestExpandVars(OptManifestBridges& toExpand) {
 	toExpand->uses = ManifestExpandVars(toExpand->vars, toExpand->uses);
 	toExpand->implements = ManifestExpandVars(toExpand->vars, toExpand->implements);
 
-	toExpand->vars = std::nullopt;
+	//toExpand->vars = std::nullopt;
 }
 
 void ManifestExpandVars(OptVecManifestTargetProfile& toExpand)
@@ -957,7 +959,7 @@ void ManifestExpandVars(OptVecManifestTargetProfile& toExpand)
 		profile.outDir = ManifestExpandVars(profile.vars, profile.outDir);
 		ManifestExpandVars(profile.bridges);
 
-		profile.vars = std::nullopt;
+		//profile.vars = std::nullopt;
 	}
 }
 
@@ -972,11 +974,11 @@ void ManifestExpandVars(OptVecManifestProfile& toExpand)
 		profile.path = ManifestExpandVars(profile.vars, profile.path);
 		profile.name = ManifestExpandVars(profile.vars, profile.name);
 
-		profile.vars = std::nullopt;
+		//profile.vars = std::nullopt;
 	}
 }
 
-void ManifestExpandVars(OptVecManifestExternalDependencies& toExpand)
+void ManifestExpandVars(OptVecManifestExternalDependency& toExpand)
 {
 	if (!toExpand.has_value()) {
 		return;
@@ -994,7 +996,7 @@ void ManifestExpandVars(OptVecManifestExternalDependencies& toExpand)
 		externalDependency.buildsystem = ManifestExpandVars(externalDependency.vars, externalDependency.buildsystem);
 		externalDependency.buildArgs = ManifestExpandVars(externalDependency.vars, externalDependency.buildArgs);
 
-		externalDependency.vars = std::nullopt;
+		//externalDependency.vars = std::nullopt;
 	}
 }
 
@@ -1020,7 +1022,7 @@ void ManifestExpandVars(OptVecManifestTarget& toExpand)
 		target.outDir = ManifestExpandVars(target.vars, target.outDir);
 		ManifestExpandVars(target.bridges);
 
-		target.vars = std::nullopt;
+		//target.vars = std::nullopt;
 	}
 }
 
@@ -1039,7 +1041,7 @@ void ManifestExpandVars(OptVecManifestProject& toExpand)
 		project.startupTarget = ManifestExpandVars(project.vars, project.startupTarget);
 		ManifestExpandVars(project.targets);
 
-		project.vars = std::nullopt;
+		//project.vars = std::nullopt;
 	}
 }
 
@@ -1054,7 +1056,7 @@ void ManifestExpandVars(OptManifestAutomation& toExpand) {
 	toExpand->hooks = ManifestExpandVars(toExpand->vars, toExpand->hooks);
 	toExpand->actions = ManifestExpandVars(toExpand->vars, toExpand->actions);
 
-	toExpand->vars = std::nullopt;
+	//toExpand->vars = std::nullopt;
 }
 
 void ManifestExpandVars(OptVecManifestWorkspace& toExpand) {
@@ -1071,7 +1073,7 @@ void ManifestExpandVars(OptVecManifestWorkspace& toExpand) {
 		ManifestExpandVars(workspace.projects);
 		ManifestExpandVars(workspace.automation);
 
-		workspace.vars = std::nullopt;
+		//workspace.vars = std::nullopt;
 	}
 }
 
@@ -1083,7 +1085,7 @@ void ManifestExpandVars(ManifestRoot& toExpand) {
 	ManifestExpandVars(toExpand.workspaces);
 	toExpand.startupWorkspace = ManifestExpandVars(toExpand.vars, toExpand.startupWorkspace);
 
-	toExpand.vars = std::nullopt;
+	//toExpand.vars = std::nullopt;
 }
 
 void CollapseProfiles(ManifestTarget& toCollapse) {
@@ -1155,7 +1157,7 @@ void PropagateVars(const ManifestTarget& parent, OptManifestBridges& child) {
 	child->vars = MergeManifest(parent.vars, child->vars);
 }
 
-void PropagateVars(const ManifestProject& parent, OptVecManifestExternalDependencies& child) {
+void PropagateVars(const ManifestProject& parent, OptVecManifestExternalDependency& child) {
 	if (!child.has_value()) {
 		return;
 	}
@@ -1335,7 +1337,7 @@ void DumpManifest(int offset, const OptVecManifestTarget& toExpand) {
 	std::cout << Indent(offset) << "}";
 }
 
-void DumpManifest(int offset, const OptVecManifestExternalDependencies& toExpand) {
+void DumpManifest(int offset, const OptVecManifestExternalDependency& toExpand) {
 	if (!toExpand.has_value()) return;
 	std::cout << "{\n";
 	for (const auto& externalDependency : *toExpand) {

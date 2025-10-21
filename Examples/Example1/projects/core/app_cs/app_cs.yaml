@@ -3,7 +3,18 @@ workspaces:
     projects:
       - name: core
         targets:
-          - name: app
+          - name: app1
+            type: exec
+            language: cs
+            toolchain: csc
+            sources: ["src/**/*.cs"]
+            link: ["libcore"]
+            intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/app"
+            outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
+            bridges:
+                implements: ["${CENTO_WORKSPACE_DIR}/idl/app/**/*.idl"]
+                uses: ["${CENTO_WORKSPACE_DIR}/idl/core/**/*.idl"]
+          - name: app2
             type: exec
             language: cs
             toolchain: csc

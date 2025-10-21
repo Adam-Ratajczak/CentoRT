@@ -8,7 +8,7 @@ workspaces:
             language: go
             toolchain: go
             sources: ["src/**/*.go"]
-            link: []
+            link: [libmath]
             intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/net"
             outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
             bridges:

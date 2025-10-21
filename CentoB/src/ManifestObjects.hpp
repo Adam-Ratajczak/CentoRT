@@ -10,7 +10,7 @@ struct ManifestTargetProfile;
 struct ManifestProfile;
 struct ManifestBridges;
 struct ManifestTarget;
-struct ManifestExternalDependencies;
+struct ManifestExternalDependency;
 struct ManifestProject;
 struct ManifestAutomation;
 struct ManifestWorkspace;
@@ -22,7 +22,7 @@ using OptVecManifestTargetProfile = std::optional<std::vector<ManifestTargetProf
 using OptVecManifestProfile = std::optional<std::vector<ManifestProfile>>;
 using OptManifestBridges = std::optional<ManifestBridges>;
 using OptVecManifestTarget = std::optional<std::vector<ManifestTarget>>;
-using OptVecManifestExternalDependencies = std::optional<std::vector<ManifestExternalDependencies>>;
+using OptVecManifestExternalDependency = std::optional<std::vector<ManifestExternalDependency>>;
 using OptVecManifestProject = std::optional<std::vector<ManifestProject>>;
 using OptManifestAutomation = std::optional<ManifestAutomation>;
 using OptVecManifestWorkspace = std::optional<std::vector<ManifestWorkspace>>;
@@ -69,7 +69,7 @@ struct ManifestTarget : public figcone::Config {
 	MANIFEST_COMMON_FOR_TARGET
 };
 
-struct ManifestExternalDependencies : public figcone::Config {
+struct ManifestExternalDependency : public figcone::Config {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(toolchain, OptStr);
 	FIGCONE_PARAM(name, OptStr);
@@ -86,7 +86,7 @@ struct ManifestProject : public figcone::Config {
 	FIGCONE_PARAM(name, OptStr);
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
 	FIGCONE_PARAM(defaultProfile, OptStr);
-	FIGCONE_NODELIST(externalDependencies, OptVecManifestExternalDependencies);
+	FIGCONE_NODELIST(externalDependencies, OptVecManifestExternalDependency);
 	FIGCONE_PARAM(startupTarget, OptStr);
 	FIGCONE_NODELIST(targets, OptVecManifestTarget);
 };
