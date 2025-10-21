@@ -40,24 +40,27 @@ FIGCONE_PARAM(intDir, OptStr);							\
 FIGCONE_PARAM(outDir, OptStr);							\
 FIGCONE_NODE(bridges, OptManifestBridges);				
 
-struct ManifestBridges : public figcone::Config {
+struct ManifestCommon {
+};
+
+struct ManifestBridges : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAMLIST(uses, OptVecStr);
 	FIGCONE_PARAMLIST(implements, OptVecStr);
 };
 
-struct ManifestTargetProfile : public figcone::Config {
+struct ManifestTargetProfile : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
 	MANIFEST_COMMON_FOR_TARGET
 };
 
-struct ManifestProfile : public figcone::Config {
+struct ManifestProfile : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
 };
 
-struct ManifestTarget : public figcone::Config {
+struct ManifestTarget : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
 	FIGCONE_NODELIST(profiles, OptVecManifestTargetProfile);
@@ -69,7 +72,7 @@ struct ManifestTarget : public figcone::Config {
 	MANIFEST_COMMON_FOR_TARGET
 };
 
-struct ManifestExternalDependency : public figcone::Config {
+struct ManifestExternalDependency : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(toolchain, OptStr);
 	FIGCONE_PARAM(name, OptStr);
@@ -81,7 +84,7 @@ struct ManifestExternalDependency : public figcone::Config {
 	FIGCONE_PARAMLIST(buildArgs, OptVecStr);
 };
 
-struct ManifestProject : public figcone::Config {
+struct ManifestProject : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
@@ -91,14 +94,14 @@ struct ManifestProject : public figcone::Config {
 	FIGCONE_NODELIST(targets, OptVecManifestTarget);
 };
 
-struct ManifestAutomation : public figcone::Config {
+struct ManifestAutomation : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(script, OptStr);
 	FIGCONE_DICT(hooks, OptMapStrStr);
 	FIGCONE_DICT(actions, OptMapStrStr);
 };
 
-struct ManifestWorkspace : public figcone::Config {
+struct ManifestWorkspace : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_PARAM(name, OptStr);
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
@@ -108,7 +111,7 @@ struct ManifestWorkspace : public figcone::Config {
 	FIGCONE_NODE(automation, OptManifestAutomation);
 };
 
-struct ManifestRoot : public figcone::Config {
+struct ManifestRoot : public figcone::Config, public ManifestCommon {
 	MANIFEST_COMMON;
 	FIGCONE_NODELIST(profiles, OptVecManifestProfile);
 	FIGCONE_PARAM(defaultProfile, OptStr);

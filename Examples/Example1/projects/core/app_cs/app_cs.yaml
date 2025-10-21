@@ -17,7 +17,7 @@ workspaces:
           - name: app2
             type: exec
             language: cs
-            toolchain: csc
+            toolchain: dotnet
             sources: ["src/**/*.cs"]
             link: ["libcore"]
             intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/app"

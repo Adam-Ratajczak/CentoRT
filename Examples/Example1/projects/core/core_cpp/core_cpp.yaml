@@ -13,7 +13,7 @@ workspaces:
                 compilerOptions: ["-O2", "-Wall"]
             type: dylib
             language: cpp
-            toolchain: gcc
+            toolchain: ninja
             sources: ["src/**/*.cpp"]
             includeDirs: ["src/**/"]
             link: ["libs:libmath", "libs:libnet"]

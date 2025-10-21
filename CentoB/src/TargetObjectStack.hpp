@@ -35,7 +35,7 @@ private:
 	void ResolvePromises();
 	void OrderPromises();
 	void OptimizePromises();
-	void FetchDependencies(const TargetPromise& promise, std::set<std::string>& keys);
+	void FetchDependencyKeys(const TargetPromise& promise, std::set<std::string>& keys);
 
 	void ResolveFinalTargets();
 	void ResolveFinalTasks();

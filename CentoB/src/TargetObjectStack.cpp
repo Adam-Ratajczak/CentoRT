@@ -1,4 +1,5 @@
 #include "TargetObjectStack.hpp"
+#include "Targets/TargetObjectRegistry.hpp"
 #include <iostream>
 #include <queue>
 #include <set>
@@ -271,7 +272,7 @@ void TargetObjectStack::OptimizePromises() {
 
 	std::set<std::string> keys;
 	if (it != _orderedPromises.end()) {
-		FetchDependencies(*it, keys);
+		FetchDependencyKeys(*it, keys);
 	}
 
 	_optimizedPromises.clear();
@@ -282,20 +283,57 @@ void TargetObjectStack::OptimizePromises() {
 	}
 }
 
-void TargetObjectStack::FetchDependencies(const TargetPromise& promise, std::set<std::string>& keys) {
+void TargetObjectStack::FetchDependencyKeys(const TargetPromise& promise, std::set<std::string>& keys) {
 	for (const auto& dependency : promise.DependsOn) {
 		auto it = std::find_if(_orderedPromises.begin(), _orderedPromises.end(), [&](const TargetPromise& promise) -> bool {
 			return promise.Key == dependency;
 			});
 		if (it != _orderedPromises.end()) {
-			FetchDependencies(*it, keys);
+			FetchDependencyKeys(*it, keys);
 		}
 	}
 	keys.insert(promise.Key);
 }
 
 void TargetObjectStack::ResolveFinalTargets() {
+	TargetObjectRegistry registry;
 
+	for (const auto& promise : _optimizedPromises) {
+		std::unique_ptr<ITargetObject> target;
+		switch (promise.Type) {
+		case ETargetType::TARGET: {
+			auto it = _manifestTargets.find(promise.Key);
+			if (it != _manifestTargets.end()) {
+				const auto* manifestTarget = it->second;
+				std::string identifier = (manifestTarget->language.has_value() ? *manifestTarget->language : "") + ":" + (manifestTarget->toolchain.has_value() ? *manifestTarget->toolchain : "");
+				target = registry.Create(identifier, manifestTarget);
+			}
+			break;
+		}
+		case ETargetType::EXTERNAL_DEPENDENCY: {
+			auto it = _manifestExternalDependencies.find(promise.Key);
+			if (it != _manifestExternalDependencies.end()) {
+				const auto* manifestExternalDependency = it->second;
+				std::string identifier = "external";
+				target = registry.Create(identifier, manifestExternalDependency);
+			}
+			break;
+		}
+		case ETargetType::AUTOMATION: {
+			auto it = _manifestAutomation.find(promise.Key);
+			if (it != _manifestAutomation.end()) {
+				const auto* manifestAutomation = it->second;
+				std::string identifier = "automation";
+				target = registry.Create(identifier, manifestAutomation);
+			}
+			break;
+		}
+		}
+
+		if (target) {
+			_targets.emplace_back(std::move(target));
+		}
+	}
 }
 
 void TargetObjectStack::ResolveFinalTasks() {
