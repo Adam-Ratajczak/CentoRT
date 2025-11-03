@@ -6,7 +6,7 @@
 class ManifestFile {
 	std::optional<std::string> _error;
 
-	void ReadManifestTree(const std::filesystem::path& path, figcone::ConfigReader& cfgReader, std::vector<ManifestRoot>& manifests);
+	void ReadManifestTree(const std::filesystem::path& path, figcone::ConfigReader& cfgReader, std::vector<ManifestObjects::ManifestRoot>& manifests);
 
 public:
 	void LoadFromFile(const std::filesystem::path& path);

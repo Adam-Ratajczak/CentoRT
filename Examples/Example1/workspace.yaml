@@ -9,5 +9,5 @@ workspaces:
     startupProject: ${DEFAULT_PROJECT}
     automation:
         script: tools/automation.py
-        hooks: { prebuild: "prebuild", postbuild: "postbuild" }
+        hooks: { pregen: "__pregen", postgen: "__postgen", prebuild: "__prebuild", postbuild: "__postbuild" }
         actions: { install: "install", clean: "clean" }

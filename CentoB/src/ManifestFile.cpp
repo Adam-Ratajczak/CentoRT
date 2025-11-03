@@ -1,39 +1,39 @@
 #include "ManifestFile.hpp"
 #include "Utils.hpp"
-#include "TargetObjectStack.hpp"
+#include "TargetStack.hpp"
 
 void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
     _error = std::nullopt;
     try {
         figcone::ConfigReader cfgReader;
-        std::vector<ManifestRoot> manifests;
+        std::vector<ManifestObjects::ManifestRoot> manifests;
 
         ReadManifestTree(path, cfgReader, manifests);
         if (manifests.empty()) {
             throw std::runtime_error("Empty manifest");
         }
 
-        ManifestRoot mergedManifest = manifests[0];
+        ManifestObjects::ManifestRoot mergedManifest = manifests[0];
         for (int i = 1; i < manifests.size(); i++) {
             mergedManifest = MergeManifest(mergedManifest, manifests[i]);
         }
 
-        EvaluateCentoVars(mergedManifest);
-        PropagateVars(mergedManifest);
-        ManifestExpandVars(mergedManifest);
+        ManifestObjects::EvaluateCentoVars(mergedManifest);
+        ManifestObjects::PropagateVars(mergedManifest);
+        ManifestObjects::ManifestExpandVars(mergedManifest);
 
-        TargetObjectStack stack(mergedManifest);
+        TargetStack stack(mergedManifest);
         stack.BuildTargetsAndTasks();
-        stack.DumpTargets();
+        stack.DumpTasks();
     }
     catch (std::exception& e) {
         _error = e.what();
     }
 }
 
-void ManifestFile::ReadManifestTree(const std::filesystem::path& filePath, figcone::ConfigReader& cfgReader, std::vector<ManifestRoot>& manifests) {
+void ManifestFile::ReadManifestTree(const std::filesystem::path& filePath, figcone::ConfigReader& cfgReader, std::vector<ManifestObjects::ManifestRoot>& manifests) {
     try {
-        ManifestRoot cfg = cfgReader.readYamlFile<ManifestRoot>(filePath);
+        ManifestObjects::ManifestRoot cfg = cfgReader.readYamlFile<ManifestObjects::ManifestRoot>(filePath);
 
         std::filesystem::path curr_path = filePath.parent_path();
         if (cfg.includes.has_value()) {
