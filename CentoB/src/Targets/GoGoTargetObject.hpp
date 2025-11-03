@@ -7,7 +7,8 @@ public:
 	GoGoTargetObject(const ManifestTarget& target);
 	static std::string StaticClassName;
 
-	void FetchTasks(std::vector<ITask>& tasks) const override;
+	void Dump() const override;
+	void FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const override;
 };
 
 template<>

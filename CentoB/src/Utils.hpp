@@ -13,4 +13,7 @@ namespace Utils {
 	bool Match(const std::string& sequence, const std::string& pattern);
 
 	std::string ExpandVars(std::string s, const std::map<std::string, std::string>& vars, int max_passes = 10);
+	
+	std::filesystem::path GetShellDirectory();
+	void ResolvePaths(const std::string& pattern, std::vector<std::filesystem::path>& paths);
 }

@@ -7,8 +7,13 @@ public:
 	static std::string StaticClassName;
 	AutomationTargetObject(const ManifestAutomation& automation);
 
-	void FetchTasks(std::vector<ITask>& tasks) const override;
+	void FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const override;
 	void Dump() const override;
+
+private:
+	std::filesystem::path _script;
+	std::map<std::string, std::string> _hooks;
+	std::map<std::string, std::string> _actions;
 };
 
 template<>

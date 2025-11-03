@@ -7,10 +7,10 @@ workspaces:
             type: dylib
             language: go
             toolchain: go
-            sources: ["src/**/*.go"]
+            sources: ["src/*.go"]
             link: [libmath]
             intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/net"
             outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
             bridges:
-                implements: ["${CENTO_WORKSPACE_DIR}/idl/net/**/*.idl"]
-                uses: []
+                implements: ["${CENTO_WORKSPACE_DIR}/idl/net/*.idl"]
+                uses: ["${CENTO_WORKSPACE_DIR}/idl/math/*.idl"]

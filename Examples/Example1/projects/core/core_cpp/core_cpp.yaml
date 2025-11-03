@@ -14,11 +14,11 @@ workspaces:
             type: dylib
             language: cpp
             toolchain: ninja
-            sources: ["src/**/*.cpp"]
-            includeDirs: ["src/**/"]
+            sources: ["src/*.cpp"]
+            includeDirs: ["src/"]
             link: ["libs:libmath", "libs:libnet"]
             intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/core"
             outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
             bridges:
-                implements: ["${CENTO_WORKSPACE_DIR}/idl/core/**/*.idl"]
-                uses: ["${CENTO_WORKSPACE_DIR}/idl/app/**/*.idl", "${CENTO_WORKSPACE_DIR}/idl/math/**/*.idl", "${CENTO_WORKSPACE_DIR}/idl/go/**/*.idl"]
+                implements: ["${CENTO_WORKSPACE_DIR}/idl/core/*.idl"]
+                uses: ["${CENTO_WORKSPACE_DIR}/idl/app/*.idl", "${CENTO_WORKSPACE_DIR}/idl/math/*.idl", "${CENTO_WORKSPACE_DIR}/idl/go/*.idl"]

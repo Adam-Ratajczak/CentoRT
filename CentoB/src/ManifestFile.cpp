@@ -24,6 +24,7 @@ void ManifestFile::LoadFromFile(const std::filesystem::path& path) {
 
         TargetObjectStack stack(mergedManifest);
         stack.BuildTargetsAndTasks();
+        stack.DumpTargets();
     }
     catch (std::exception& e) {
         _error = e.what();

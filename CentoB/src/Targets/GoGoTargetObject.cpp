@@ -1,4 +1,5 @@
 #include "GoGoTargetObject.hpp"
+#include <iostream>
 
 std::string GoGoTargetObject::StaticClassName = "go:go";
 
@@ -6,6 +7,11 @@ GoGoTargetObject::GoGoTargetObject(const ManifestTarget& target) : GoTargetObjec
 
 }
 
-void GoGoTargetObject::FetchTasks(std::vector<ITask>& tasks) const {
+void GoGoTargetObject::Dump() const {
+	std::cout << "=== " << StaticClassName << " ===\n";
+	GoTargetObject::Dump();
+}
+
+void GoGoTargetObject::FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const {
 
 }

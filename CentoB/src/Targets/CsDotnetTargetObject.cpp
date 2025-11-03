@@ -1,4 +1,5 @@
 #include "CsDotnetTargetObject.hpp"
+#include <iostream>
 
 std::string CsDotnetTargetObject::StaticClassName = "cs:dotnet";
 
@@ -6,6 +7,11 @@ CsDotnetTargetObject::CsDotnetTargetObject(const ManifestTarget& target) : CsTar
 
 }
 
-void CsDotnetTargetObject::FetchTasks(std::vector<ITask>& tasks) const {
+void CsDotnetTargetObject::Dump() const {
+	std::cout << "=== " << StaticClassName << " ===\n";
+	CsTargetObject::Dump();
+}
+
+void CsDotnetTargetObject::FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const {
 
 }

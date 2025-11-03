@@ -7,7 +7,7 @@ public:
 	static std::string StaticClassName;
 	ExternalDependencyTargetObject(const ManifestExternalDependency& externalDependency);
 
-	void FetchTasks(std::vector<ITask>& tasks) const override;
+	void FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const override;
 	void Dump() const override;
 };
 
