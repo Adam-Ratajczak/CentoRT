@@ -9,8 +9,8 @@ workspaces:
             toolchain: go
             sources: ["src/*.go"]
             link: [libmath]
-            intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/net"
-            outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
+            intDir: "${CENTO_CURRENT_DIR}/int/${CENTO_CURRENT_PROFILE}"
+            outDir: "${CENTO_CURRENT_DIR}/out/${CENTO_CURRENT_PROFILE}"
             bridges:
                 implements: ["${CENTO_WORKSPACE_DIR}/idl/net/*.idl"]
                 uses: ["${CENTO_WORKSPACE_DIR}/idl/math/*.idl"]

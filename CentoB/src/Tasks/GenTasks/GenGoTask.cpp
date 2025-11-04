@@ -1,8 +1,8 @@
 #include "GenGoTask.hpp"
 #include <iostream>
 
-void GenGoTask::Execute() const {
-
+bool GenGoTask::Execute() const {
+	return true;
 }
 
 void GenGoTask::Dump() const {
@@ -22,6 +22,5 @@ void GenGoTask::Dump() const {
 		};
 
 	std::cout << "sources: "; dumpVec(_sources);
-	std::cout << "includeDirs: "; dumpVec(_includeDirs);
 	std::cout << "compilerOptions: "; dumpVec(_compilerOptions);
 }

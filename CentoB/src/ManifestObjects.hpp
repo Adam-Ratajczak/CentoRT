@@ -36,8 +36,8 @@ FIGCONE_PARAMLIST(envFiles, OptVecStr);
 
 #define MANIFEST_COMMON_FOR_TARGET						\
 FIGCONE_PARAMLIST(sources, OptVecStr);					\
-FIGCONE_PARAMLIST(includeDirs, OptVecStr);				\
 FIGCONE_PARAMLIST(compilerOptions, OptVecStr);			\
+FIGCONE_PARAMLIST(linkerOptions, OptVecStr);			\
 FIGCONE_PARAM(intDir, OptStr);							\
 FIGCONE_PARAM(outDir, OptStr);							\
 FIGCONE_NODE(bridges, OptManifestBridges);				

@@ -1,13 +1,12 @@
 #include "BuildNinjaTask.hpp"
 #include <iostream>
 
-void BuildNinjaTask::Execute() const {
-
+bool BuildNinjaTask::Execute() const {
+	return true;
 }
 
 void BuildNinjaTask::Dump() const {
 	std::cout << "=== BuildNinjaTask ===\n";
-	std::cout << "file: " << _file << "\n";
-	std::cout << "intdir: " << _intdir << "\n";
+	std::cout << "ninjaDir: " << _ninjaDir << "\n";
 	std::cout << "outdir: " << _outdir << "\n";
 }

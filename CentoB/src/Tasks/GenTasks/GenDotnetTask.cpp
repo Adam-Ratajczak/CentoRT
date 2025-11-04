@@ -1,8 +1,8 @@
 #include "GenDotnetTask.hpp"
 #include <iostream>
 
-void GenDotnetTask::Execute() const {
-
+bool GenDotnetTask::Execute() const {
+	return true;
 }
 
 void GenDotnetTask::Dump() const {
@@ -22,6 +22,5 @@ void GenDotnetTask::Dump() const {
 		};
 
 	std::cout << "sources: "; dumpVec(_sources);
-	std::cout << "includeDirs: "; dumpVec(_includeDirs);
 	std::cout << "compilerOptions: "; dumpVec(_compilerOptions);
 }

@@ -9,8 +9,8 @@ workspaces:
             toolchain: cargo
             sources: ["src/*.rs"]
             link: []
-            intDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/obj/math"
-            outDir: "${BUILD_DIR}/${CENTO_CURRENT_PROFILE}/app"
+            intDir: "${CENTO_CURRENT_DIR}/int/${CENTO_CURRENT_PROFILE}"
+            outDir: "${CENTO_CURRENT_DIR}/out/${CENTO_CURRENT_PROFILE}"
             bridges:
                 implements: ["${CENTO_WORKSPACE_DIR}/idl/math/*.idl"]
                 uses: []

@@ -11,7 +11,7 @@ add_executable(CentoB
     "src/Targets/TargetRegistry.cpp" 
     "src/Targets/AutomationTarget.cpp" 
     "src/Targets/BuildTarget.cpp"
-    "src/Targets/CppNinjaTarget.cpp"
+    "src/Targets/CppNinjaGccTarget.cpp"
     "src/Targets/CsDotnetTarget.cpp"
     "src/Targets/ExternalDependencyTarget.cpp"
     "src/Targets/GoGoTarget.cpp"
@@ -29,11 +29,11 @@ add_executable(CentoB
     "src/Tasks/GenTasks/GenGoBridgeIface.cpp"
     "src/Tasks/GenTasks/GenGoBridgeImpl.cpp"
     "src/Tasks/GenTasks/GenGoTask.cpp"
-    "src/Tasks/GenTasks/GenNinjaTask.cpp"
+    "src/Tasks/GenTasks/GenNinjaGccTask.cpp"
     "src/Tasks/GenTasks/GenRsBridgeIface.cpp"
     "src/Tasks/GenTasks/GenRsBridgeImpl.cpp"
     "src/Tasks/AutomationTask.cpp"
-)
+ "src/Generators/NinjaGenerator.cpp")
 target_include_directories(CentoB PRIVATE src)
 set_target_properties(CentoB PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
 set_target_properties(CentoB PROPERTIES

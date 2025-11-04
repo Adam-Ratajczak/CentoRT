@@ -1,8 +1,8 @@
 #include "GenGoBridgeImpl.hpp"
 #include <iostream>
 
-void GenGoBridgeImpl::Execute() const {
-
+bool GenGoBridgeImpl::Execute() const {
+	return true;
 }
 
 void GenGoBridgeImpl::Dump() const {

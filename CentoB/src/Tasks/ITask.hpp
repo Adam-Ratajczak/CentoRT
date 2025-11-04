@@ -15,7 +15,7 @@ enum class EOrder {
 
 class ITask {
 public:
-	virtual void Execute() const = 0;
+	virtual bool Execute() const = 0;
 	virtual void Dump() const = 0;
 
 	virtual EOrder GetOrder() const = 0;

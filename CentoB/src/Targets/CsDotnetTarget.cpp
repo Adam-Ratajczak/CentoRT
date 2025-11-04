@@ -19,39 +19,30 @@ void CsDotnetTarget::Dump() const {
 
 void CsDotnetTarget::FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const {
 	std::vector<std::filesystem::path> sources = _sources;
-	std::vector<std::filesystem::path> includeDirs = _includeDirs;
 	for (const auto& bridge : _bridgesImplements) {
-		auto genDir = _intDir / "generated" / "impl";
-		auto bridgeName = bridge.string().substr(0, bridge.string().rfind("."));
-		tasks.emplace_back(std::make_unique<GenCsBridgeImpl>(bridge, genDir));
+		auto genDir = _intDir / "generated" / "impl/";
+		auto bridgeFileName = bridge.filename().string();
+		auto bridgeName = bridgeFileName.substr(0, bridgeFileName.rfind("."));
+		auto sourceBridgeFile = Utils::NormalizePath(genDir / (bridgeName + ".cs"));
 
-		auto sourceBridgeFile = genDir / (bridgeName + ".cs");
-
-		if (std::find(_sources.begin(), _sources.end(), sourceBridgeFile) == _sources.end()) {
+		if (std::find(sources.begin(), sources.end(), sourceBridgeFile) == sources.end()) {
 			sources.emplace_back(sourceBridgeFile);
-		}
-
-		if (std::find(_includeDirs.begin(), _includeDirs.end(), genDir) == _includeDirs.end()) {
-			includeDirs.emplace_back(genDir);
+			tasks.emplace_back(std::make_unique<GenCsBridgeImpl>(bridge, sourceBridgeFile));
 		}
 	}
 
 	for (const auto& bridge : _bridgesUses) {
-		auto genDir = _intDir / "generated" / "iface";
-		auto bridgeName = bridge.string().substr(0, bridge.string().rfind("."));
-		tasks.emplace_back(std::make_unique<GenCsBridgeIface>(bridge, genDir));
+		auto genDir = _intDir / "generated/iface/";
+		auto bridgeFileName = bridge.filename().string();
+		auto bridgeName = bridgeFileName.substr(0, bridgeFileName.rfind("."));
+		auto sourceBridgeFile = Utils::NormalizePath(genDir / (bridgeName + ".cs"));
 
-		auto sourceBridgeFile = genDir / (bridgeName + ".cs");
-
-		if (std::find(_sources.begin(), _sources.end(), sourceBridgeFile) == _sources.end()) {
+		if (std::find(sources.begin(), sources.end(), sourceBridgeFile) == sources.end()) {
 			sources.emplace_back(sourceBridgeFile);
-		}
-
-		if (std::find(_includeDirs.begin(), _includeDirs.end(), genDir) == _includeDirs.end()) {
-			includeDirs.emplace_back(genDir);
+			tasks.emplace_back(std::make_unique<GenCsBridgeIface>(bridge, sourceBridgeFile));
 		}
 	}
 
-	tasks.emplace_back(std::make_unique<GenDotnetTask>(sources, includeDirs, _compilerOptions));
+	tasks.emplace_back(std::make_unique<GenDotnetTask>(sources, _compilerOptions));
 	tasks.emplace_back(std::make_unique<BuildDotnetTask>(_intDir, _intDir, _outDir));
 }

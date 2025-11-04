@@ -16,4 +16,6 @@ namespace Utils {
 	
 	std::filesystem::path GetShellDirectory();
 	void ResolvePaths(const std::string& pattern, std::vector<std::filesystem::path>& paths);
+
+	std::filesystem::path NormalizePath(const std::filesystem::path& p);
 }

@@ -7,7 +7,7 @@ public:
 		: _bridge{ bridge }
 		, _outputDir{ outputDir }{ }
 
-	void Execute() const override;
+	bool Execute() const override;
 	void Dump() const override;
 	EOrder GetOrder() const override { return EOrder::GEN; }
 

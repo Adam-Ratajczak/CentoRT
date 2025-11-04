@@ -1,8 +1,8 @@
 #include "GenCppBridgeIface.hpp"
 #include <iostream>
 
-void GenCppBridgeIface::Execute() const {
-
+bool GenCppBridgeIface::Execute() const {
+	return true;
 }
 
 void GenCppBridgeIface::Dump() const {

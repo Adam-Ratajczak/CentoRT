@@ -1,8 +1,8 @@
 #include "BuildGoTask.hpp"
 #include <iostream>
 
-void BuildGoTask::Execute() const {
-
+bool BuildGoTask::Execute() const {
+	return true;
 }
 
 void BuildGoTask::Dump() const {

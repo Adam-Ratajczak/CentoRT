@@ -10,9 +10,10 @@ public:
 
 protected:
 
+	std::string _name;
 	std::vector<std::filesystem::path> _sources;
-	std::vector<std::filesystem::path> _includeDirs;
 	std::vector<std::string> _compilerOptions;
+	std::vector<std::string> _linkerOptions;
 	std::filesystem::path _intDir;
 	std::filesystem::path _outDir;
 	std::vector<std::filesystem::path> _bridgesImplements;

@@ -1,8 +1,8 @@
 #include "BuildCargoTask.hpp"
 #include <iostream>
 
-void BuildCargoTask::Execute() const {
-
+bool BuildCargoTask::Execute() const {
+	return true;
 }
 
 void BuildCargoTask::Dump() const {

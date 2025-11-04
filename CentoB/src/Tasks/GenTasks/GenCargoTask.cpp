@@ -1,8 +1,8 @@
 #include "GenCargoTask.hpp"
 #include <iostream>
 
-void GenCargoTask::Execute() const {
-
+bool GenCargoTask::Execute() const {
+	return true;
 }
 
 void GenCargoTask::Dump() const {
@@ -22,6 +22,5 @@ void GenCargoTask::Dump() const {
 		};
 
 	std::cout << "sources: "; dumpVec(_sources);
-	std::cout << "includeDirs: "; dumpVec(_includeDirs);
 	std::cout << "compilerOptions: "; dumpVec(_compilerOptions);
 }

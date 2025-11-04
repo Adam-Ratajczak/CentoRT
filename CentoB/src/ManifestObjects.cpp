@@ -96,8 +96,8 @@ namespace ManifestObjects {
 				plhs.envFiles = MergeManifest(plhs.envFiles, prhs.envFiles);
 				plhs.name = MergeManifest(plhs.name, prhs.name);
 				plhs.sources = MergeManifest(plhs.sources, prhs.sources);
-				plhs.includeDirs = MergeManifest(plhs.includeDirs, prhs.includeDirs);
 				plhs.compilerOptions = MergeManifest(plhs.compilerOptions, prhs.compilerOptions);
+				plhs.linkerOptions = MergeManifest(plhs.linkerOptions, prhs.linkerOptions);
 				plhs.intDir = MergeManifest(plhs.intDir, prhs.intDir);
 				plhs.outDir = MergeManifest(plhs.outDir, prhs.outDir);
 				plhs.bridges = MergeManifest(plhs.bridges, prhs.bridges);
@@ -214,8 +214,8 @@ namespace ManifestObjects {
 				plhs.toolchain = MergeManifest(plhs.toolchain, prhs.toolchain);
 				plhs.link = MergeManifest(plhs.link, prhs.link);
 				plhs.sources = MergeManifest(plhs.sources, prhs.sources);
-				plhs.includeDirs = MergeManifest(plhs.includeDirs, prhs.includeDirs);
 				plhs.compilerOptions = MergeManifest(plhs.compilerOptions, prhs.compilerOptions);
+				plhs.linkerOptions = MergeManifest(plhs.linkerOptions, prhs.linkerOptions);
 				plhs.intDir = MergeManifest(plhs.intDir, prhs.intDir);
 				plhs.outDir = MergeManifest(plhs.outDir, prhs.outDir);
 				plhs.bridges = MergeManifest(plhs.bridges, prhs.bridges);
@@ -955,8 +955,8 @@ namespace ManifestObjects {
 			profile.path = ManifestExpandVars(profile.vars, profile.path);
 			profile.name = ManifestExpandVars(profile.vars, profile.name);
 			profile.sources = ManifestExpandVars(profile.vars, profile.sources);
-			profile.includeDirs = ManifestExpandVars(profile.vars, profile.includeDirs);
 			profile.compilerOptions = ManifestExpandVars(profile.vars, profile.compilerOptions);
+			profile.linkerOptions = ManifestExpandVars(profile.vars, profile.linkerOptions);
 			profile.intDir = ManifestExpandVars(profile.vars, profile.intDir);
 			profile.outDir = ManifestExpandVars(profile.vars, profile.outDir);
 			ManifestExpandVars(profile.bridges);
@@ -1018,8 +1018,8 @@ namespace ManifestObjects {
 			target.toolchain = ManifestExpandVars(target.vars, target.toolchain);
 			target.link = ManifestExpandVars(target.vars, target.link);
 			target.sources = ManifestExpandVars(target.vars, target.sources);
-			target.includeDirs = ManifestExpandVars(target.vars, target.includeDirs);
 			target.compilerOptions = ManifestExpandVars(target.vars, target.compilerOptions);
+			target.linkerOptions = ManifestExpandVars(target.vars, target.linkerOptions);
 			target.intDir = ManifestExpandVars(target.vars, target.intDir);
 			target.outDir = ManifestExpandVars(target.vars, target.outDir);
 			ManifestExpandVars(target.bridges);
@@ -1097,8 +1097,8 @@ namespace ManifestObjects {
 				if (*profile.name == defaultProfile) {
 					toCollapse.vars = MergeManifest(toCollapse.vars, profile.vars);
 					toCollapse.sources = MergeManifest(toCollapse.sources, profile.sources);
-					toCollapse.includeDirs = MergeManifest(toCollapse.includeDirs, profile.includeDirs);
 					toCollapse.compilerOptions = MergeManifest(toCollapse.compilerOptions, profile.compilerOptions);
+					toCollapse.linkerOptions = MergeManifest(toCollapse.linkerOptions, profile.linkerOptions);
 					toCollapse.intDir = MergeManifest(toCollapse.intDir, profile.intDir);
 					toCollapse.outDir = MergeManifest(toCollapse.outDir, profile.outDir);
 					toCollapse.bridges = MergeManifest(toCollapse.bridges, profile.bridges);
@@ -1294,8 +1294,8 @@ namespace ManifestObjects {
 			DUMP("envFiles", profile.envFiles);
 			DUMP("name", profile.name);
 			DUMP("sources", profile.sources);
-			DUMP("includeDirs", profile.includeDirs);
 			DUMP("compilerOptions", profile.compilerOptions);
+			DUMP("linkerOptions", profile.linkerOptions);
 			DUMP("intDir", profile.intDir);
 			DUMP("outDir", profile.outDir);
 			DUMP("bridges", profile.bridges);
@@ -1330,8 +1330,8 @@ namespace ManifestObjects {
 			DUMP("toolchain", target.toolchain);
 			DUMP("link", target.link);
 			DUMP("sources", target.sources);
-			DUMP("includeDirs", target.includeDirs);
 			DUMP("compilerOptions", target.compilerOptions);
+			DUMP("linkerOptions", target.linkerOptions);
 			DUMP("intDir", target.intDir);
 			DUMP("outDir", target.outDir);
 			DUMP("bridges", target.bridges);

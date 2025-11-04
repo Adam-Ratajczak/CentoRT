@@ -7,13 +7,13 @@
 std::string AutomationTarget::StaticClassName = "automation";
 
 AutomationTarget::AutomationTarget(const ManifestObjects::ManifestAutomation& automation) {
+	std::filesystem::path path = automation.path.has_value() ? *automation.path : "";
 	if (automation.script.has_value()) {
-		std::vector<std::filesystem::path> paths;
-		Utils::ResolvePaths(*automation.script, paths);
-
-		if (!paths.empty()) {
-			_script = paths[0];
+		_script = *automation.script;
+		if (!Utils::IsWeaklyCanonical(_script)) {
+			_script = path / _script;
 		}
+		_script = Utils::NormalizePath(_script);
 	}
 
 	if (automation.hooks.has_value()) {

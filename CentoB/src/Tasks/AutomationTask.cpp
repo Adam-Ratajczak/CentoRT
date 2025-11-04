@@ -1,8 +1,8 @@
 #include "AutomationTask.hpp"
 #include <iostream>
 
-void AutomationTask::Execute() const {
-
+bool AutomationTask::Execute() const {
+	return true;
 }
 
 void AutomationTask::Dump() const {

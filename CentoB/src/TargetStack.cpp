@@ -38,6 +38,16 @@ void TargetStack::DumpTasks() const {
 	std::cout << "=================================\n";
 }
 
+bool TargetStack::ExecuteAllTasks() const {
+	for (const auto& task : _tasks) {
+		if (!task->Execute()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool TargetStack::ResolveStartupTarget() {
 	_startupTarget.clear();
 	if (_manifestRoot.workspaces.has_value()) {

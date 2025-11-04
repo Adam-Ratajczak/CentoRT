@@ -1,8 +1,8 @@
 #include "BuildDotnetTask.hpp"
 #include <iostream>
 
-void BuildDotnetTask::Execute() const {
-
+bool BuildDotnetTask::Execute() const {
+	return true;
 }
 
 void BuildDotnetTask::Dump() const {

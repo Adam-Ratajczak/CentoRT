@@ -2,7 +2,8 @@
 #include <iostream>
 
 BuildTarget::BuildTarget(const ManifestObjects::ManifestTarget& target) {
-	std::filesystem::path path = target.path.has_value() ? *target.path : "";
+	_name = target.name.has_value() ? *target.name : "";
+	std::filesystem::path path = Utils::NormalizePath(target.path.has_value() ? *target.path : "");
 	if (target.sources.has_value()) {
 		for (const auto& pattern : *target.sources) {
 			std::vector<std::filesystem::path> paths;
@@ -11,43 +12,31 @@ BuildTarget::BuildTarget(const ManifestObjects::ManifestTarget& target) {
 		}
 	}
 
-	if (target.includeDirs.has_value()) {
-		for (const auto& pattern : *target.includeDirs) {
-			std::vector<std::filesystem::path> paths;
-			Utils::ExpandGlob(pattern, path, paths);
-			_includeDirs.insert(_includeDirs.end(), paths.begin(), paths.end());
-		}
-	}
-
 	if (target.compilerOptions.has_value()) {
 		_compilerOptions = *target.compilerOptions;
 	}
 
-	if (target.intDir.has_value()) {
-		std::vector<std::filesystem::path> paths;
-		Utils::ExpandGlob(*target.intDir, path, paths);
+	if (target.linkerOptions.has_value()) {
+		_linkerOptions = *target.linkerOptions;
+	}
 
-		if (!paths.empty()) {
-			_intDir = paths[0];
-		}
+	if (target.intDir.has_value()) {
+		_intDir = *target.intDir;
 	}
 
 	if (_intDir.empty()) {
 		_intDir = path / "int";
 	}
+	_intDir = Utils::NormalizePath(_intDir);
 
 	if (target.outDir.has_value()) {
-		std::vector<std::filesystem::path> paths;
-		Utils::ExpandGlob(*target.outDir, path, paths);
-
-		if (!paths.empty()) {
-			_outDir = paths[0];
-		}
+		_outDir = *target.outDir;
 	}
 
 	if (_outDir.empty()) {
 		_outDir = path / "out";
 	}
+	_outDir = Utils::NormalizePath(_outDir);
 
 	if (target.bridges.has_value() && target.bridges->implements.has_value()) {
 		for (const auto& pattern : *target.bridges->implements) {
@@ -79,9 +68,10 @@ void BuildTarget::Dump() const {
 		}
 		std::cout << "]\n";
 		};
+	std::cout << "name: " << _name << "\n";
 	std::cout << "sources: "; dumpVec(_sources);
-	std::cout << "includeDirs: "; dumpVec(_includeDirs);
 	std::cout << "compilerOptions: "; dumpVec(_compilerOptions);
+	std::cout << "linkerOptions: "; dumpVec(_linkerOptions);
 	std::cout << "intDir: " << _intDir << "\n";
 	std::cout << "outDir: " << _outDir << "\n";
 	std::cout << "bridgesImplements: "; dumpVec(_bridgesImplements);

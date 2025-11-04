@@ -8,7 +8,7 @@ public:
 		, _intdir{ intdir }
 		, _outdir{ outdir } { }
 
-	void Execute() const override;
+	bool Execute() const override;
 	void Dump() const override;
 	EOrder GetOrder() const override { return EOrder::BUILD; }
 

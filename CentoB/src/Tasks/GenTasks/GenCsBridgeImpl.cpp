@@ -1,8 +1,8 @@
 #include "GenCsBridgeImpl.hpp"
 #include <iostream>
 
-void GenCsBridgeImpl::Execute() const {
-
+bool GenCsBridgeImpl::Execute() const {
+	return true;
 }
 
 void GenCsBridgeImpl::Dump() const {

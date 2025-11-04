@@ -46,7 +46,7 @@ namespace Utils {
             std::error_code ec;
             auto canon = std::filesystem::weakly_canonical(candidate, ec);
             if (!ec && std::filesystem::exists(canon)) {
-                paths.emplace_back(canon);
+                paths.emplace_back(NormalizePath(canon));
             }
             return;
         }
@@ -83,7 +83,7 @@ namespace Utils {
             if (wildcards::match(relStr, tailPattern)) {
                 std::error_code ecCan;
                 std::filesystem::path canon = std::filesystem::weakly_canonical(p, ecCan);
-                paths.emplace_back(ecCan ? p : canon);
+                paths.emplace_back(NormalizePath(ecCan ? p : canon));
             }
         }
     }
@@ -126,9 +126,9 @@ namespace Utils {
 
     bool IsWeaklyCanonical(const std::filesystem::path& p) {
         std::error_code ec;
-        std::filesystem::path c = std::filesystem::weakly_canonical(p, ec);
+        std::filesystem::path wc = std::filesystem::weakly_canonical(p, ec);
         if (ec) return false;
-        return p == c;
+        return p.is_absolute() && p == wc;
     }
     
     bool Match(const std::string& sequence, const std::string& pattern) {
@@ -197,5 +197,11 @@ namespace Utils {
 
     void ResolvePaths(const std::string& pattern, std::vector<std::filesystem::path>& paths) {
         ExpandGlob(pattern, GetShellDirectory(), paths);
+    }
+
+    std::filesystem::path NormalizePath(const std::filesystem::path& p) {
+        std::string s = p.lexically_normal().string();
+        std::replace(s.begin(), s.end(), '\\', '/');
+        return s;
     }
 }

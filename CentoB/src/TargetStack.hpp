@@ -12,6 +12,8 @@ public:
 
 	void DumpTargets() const;
 	void DumpTasks() const;
+
+	bool ExecuteAllTasks() const;
 private:
 	struct TargetPromise;
 
