@@ -11,6 +11,8 @@ public:
 protected:
 
 	std::string _name;
+	std::string _standard;
+	std::string _type;
 	std::vector<std::filesystem::path> _sources;
 	std::vector<std::string> _compilerOptions;
 	std::vector<std::string> _linkerOptions;

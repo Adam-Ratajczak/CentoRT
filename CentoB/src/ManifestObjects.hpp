@@ -69,6 +69,7 @@ FIGCONE_NODE(bridges, OptManifestBridges);
 		FIGCONE_PARAM(defaultProfile, OptStr);
 		FIGCONE_PARAM(type, OptStr);
 		FIGCONE_PARAM(language, OptStr);
+		FIGCONE_PARAM(standard, OptStr);
 		FIGCONE_PARAM(toolchain, OptStr);
 		FIGCONE_PARAMLIST(link, OptVecStr);
 		MANIFEST_COMMON_FOR_TARGET

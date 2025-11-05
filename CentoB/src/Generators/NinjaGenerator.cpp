@@ -1,17 +1,19 @@
 #include "NinjaGenerator.hpp"
 #include <fstream>
 
-void NinjaGenerator::Init(const std::string& compiler,
+void NinjaGenerator::Init(const std::string& name,
+    const std::string& compiler,
     const std::vector<std::filesystem::path>& sources,
     const std::vector<std::string>& compilerOptions,
-    const std::vector<std::string>& linkerOptions, 
-    const std::string& name)
+    const std::vector<std::string>& linkerOptions,
+    bool staticlib)
 {
     _vars.clear();
     _rules.clear();
     _buildEdges.clear();
 
     _vars["cc"] = compiler;
+    _vars["ar"] = "ar";
     _vars["srcs"] = "";
     _vars["objs"] = "";
     _vars["cflags"] = "";
@@ -42,11 +44,20 @@ void NinjaGenerator::Init(const std::string& compiler,
         .deps = "gcc",
         });
 
-    _rules.emplace_back(Rule{
-        .name = "link",
-        .command = "$cc $in -o $out $ldflags",
-        .description = "LINK $out",
-        });
+    if (staticlib) {
+        _rules.emplace_back(Rule{
+            .name = "archive",
+            .command = "$ar rcs $out $in",
+            .description = "AR $out",
+            });
+    }
+    else {
+        _rules.emplace_back(Rule{
+            .name = "link",
+            .command = "$cc $in -o $out $ldflags",
+            .description = "LINK $out",
+            });
+    }
 
     _rules.emplace_back(Rule{
         .name = "mkdir",
@@ -68,11 +79,20 @@ void NinjaGenerator::Init(const std::string& compiler,
         _buildEdges.push_back(std::move(edge));
     }
 
-    BuildEdge linkEdge;
-    linkEdge.outputs = { name };
-    linkEdge.rule_name = "link";
-    linkEdge.explicit_inputs = objectPaths;
-    _buildEdges.push_back(std::move(linkEdge));
+    if (staticlib) {
+        BuildEdge archiveEdge;
+        archiveEdge.outputs = { name };
+        archiveEdge.rule_name = "archive";
+        archiveEdge.explicit_inputs = objectPaths;
+        _buildEdges.push_back(std::move(archiveEdge));
+    }
+    else {
+        BuildEdge linkEdge;
+        linkEdge.outputs = { name };
+        linkEdge.rule_name = "link";
+        linkEdge.explicit_inputs = objectPaths;
+        _buildEdges.push_back(std::move(linkEdge));
+    }
 }
 
 bool NinjaGenerator::SaveToFile(const std::filesystem::path& path) const {

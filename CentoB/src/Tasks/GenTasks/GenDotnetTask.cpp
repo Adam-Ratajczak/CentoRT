@@ -1,8 +1,14 @@
 #include "GenDotnetTask.hpp"
+#include <Generators/DotnetGenerator.hpp>
 #include <iostream>
 
 bool GenDotnetTask::Execute() const {
-	return true;
+	std::filesystem::create_directories(_intdir);
+
+	DotnetGenerator generator;
+	generator.Init(_sources, _options);
+
+	return generator.SaveToFile(_intdir / "project.csproj");
 }
 
 void GenDotnetTask::Dump() const {
@@ -21,6 +27,7 @@ void GenDotnetTask::Dump() const {
 		std::cout << "]\n";
 		};
 
+	std::cout << _intdir << "\n";
 	std::cout << "sources: "; dumpVec(_sources);
-	std::cout << "compilerOptions: "; dumpVec(_compilerOptions);
+	std::cout << "options: "; dumpVec(_options);
 }

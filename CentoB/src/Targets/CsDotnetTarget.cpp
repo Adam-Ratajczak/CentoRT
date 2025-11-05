@@ -43,6 +43,26 @@ void CsDotnetTarget::FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) cons
 		}
 	}
 
-	tasks.emplace_back(std::make_unique<GenDotnetTask>(sources, _compilerOptions));
+	auto options = _compilerOptions;
+	options.insert(options.end(), _linkerOptions.begin(), _linkerOptions.end());
+	if (!_standard.empty()) {
+		options.emplace_back("TargetFramework=" + _standard);
+		options.emplace_back("LangVersion=preview");
+	}
+	if (!_name.empty()) {
+		options.emplace_back("AssemblyName=" + _name);
+	}
+
+	if (_type == "exec") {
+		options.emplace_back("OutputType=Exec");
+	}
+	else if (_type == "lib" || _type == "dylib") {
+		options.emplace_back("OutputType=Library");
+	}
+	options.emplace_back("Version=1.0");
+	options.emplace_back("Encoding=utf-8");
+	options.emplace_back("Deterministic=true");
+
+	tasks.emplace_back(std::make_unique<GenDotnetTask>(_intDir, sources, options));
 	tasks.emplace_back(std::make_unique<BuildDotnetTask>(_intDir, _intDir, _outDir));
 }

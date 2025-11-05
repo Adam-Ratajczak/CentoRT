@@ -3,6 +3,8 @@
 
 BuildTarget::BuildTarget(const ManifestObjects::ManifestTarget& target) {
 	_name = target.name.has_value() ? *target.name : "";
+	_standard = target.standard.has_value() ? *target.standard : "";
+	_type = target.type.has_value() ? *target.type : "";
 	std::filesystem::path path = Utils::NormalizePath(target.path.has_value() ? *target.path : "");
 	if (target.sources.has_value()) {
 		for (const auto& pattern : *target.sources) {
@@ -69,6 +71,7 @@ void BuildTarget::Dump() const {
 		std::cout << "]\n";
 		};
 	std::cout << "name: " << _name << "\n";
+	std::cout << "name: " << _standard << "\n";
 	std::cout << "sources: "; dumpVec(_sources);
 	std::cout << "compilerOptions: "; dumpVec(_compilerOptions);
 	std::cout << "linkerOptions: "; dumpVec(_linkerOptions);

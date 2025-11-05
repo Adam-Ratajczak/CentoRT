@@ -32,5 +32,16 @@ add_library(wildcards_lib INTERFACE)
 target_include_directories(wildcards_lib INTERFACE
   ${wildcards_SOURCE_DIR}/include
 )
+FetchContent_Declare(
+    rapidxml
+    GIT_REPOSITORY https://github.com/dwd/rapidxml.git
+    GIT_TAG        v1.0.0
+)
 
+FetchContent_MakeAvailable(rapidxml)
+
+add_library(rapidxml_lib INTERFACE)
+target_include_directories(rapidxml_lib INTERFACE
+    ${rapidxml_SOURCE_DIR}
+)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CentoB)

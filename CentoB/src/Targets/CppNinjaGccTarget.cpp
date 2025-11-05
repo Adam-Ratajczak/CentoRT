@@ -56,7 +56,18 @@ void CppNinjaGccTarget::FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) c
 	for (const auto& include : includeDirs) {
 		compilerOptions.emplace_back("-I \"" + include.string() + "\"");
 	}
+	if (!_standard.empty()) {
+		compilerOptions.emplace_back("-std=" + _standard);
+	}
+	auto linkerOptions = _linkerOptions;
+	bool staticlib = false;
+	if (_type == "dylib") {
+		linkerOptions.emplace_back("--shared");
+	}
+	else if (_type == "lib") {
+		staticlib = true;
+	}
 
-	tasks.emplace_back(std::make_unique<GenNinjaGccTask>(_intDir, sources, compilerOptions, _linkerOptions, _name));
+	tasks.emplace_back(std::make_unique<GenNinjaGccTask>(_name, _intDir, sources, compilerOptions, linkerOptions, staticlib));
 	tasks.emplace_back(std::make_unique<BuildNinjaTask>(_intDir, _outDir));
 }

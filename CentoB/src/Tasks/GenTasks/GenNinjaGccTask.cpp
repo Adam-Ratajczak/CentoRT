@@ -6,7 +6,7 @@ bool GenNinjaGccTask::Execute() const {
 	std::filesystem::create_directories(_intdir);
 	
 	NinjaGenerator generator;
-	generator.Init("gcc", _sources, _compilerOptions, _linkerOptions, _name);
+	generator.Init(_name, "gcc", _sources, _compilerOptions, _linkerOptions, _staticlib);
 
 	return generator.SaveToFile(_intdir / "build.ninja");
 }
@@ -32,4 +32,5 @@ void GenNinjaGccTask::Dump() const {
 	std::cout << "sources: "; dumpVec(_sources);
 	std::cout << "compilerOptions: "; dumpVec(_compilerOptions);
 	std::cout << "linkerOptions: "; dumpVec(_linkerOptions);
+	std::cout << "static: " << _staticlib << "\n";
 }

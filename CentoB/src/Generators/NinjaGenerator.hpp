@@ -9,7 +9,7 @@ class NinjaGenerator {
 public:
 	NinjaGenerator() = default;
 
-	void Init(const std::string& compiler, const std::vector<std::filesystem::path>& sources, const std::vector<std::string>& compilerOptions, const std::vector<std::string>& linkerOptions, const std::string& name);
+	void Init(const std::string& name, const std::string& compiler, const std::vector<std::filesystem::path>& sources, const std::vector<std::string>& compilerOptions, const std::vector<std::string>& linkerOptions, bool staticlib);
 	bool SaveToFile(const std::filesystem::path& path) const;
 
 private:

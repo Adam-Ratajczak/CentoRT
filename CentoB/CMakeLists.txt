@@ -33,13 +33,14 @@ add_executable(CentoB
     "src/Tasks/GenTasks/GenRsBridgeIface.cpp"
     "src/Tasks/GenTasks/GenRsBridgeImpl.cpp"
     "src/Tasks/AutomationTask.cpp"
- "src/Generators/NinjaGenerator.cpp")
+    "src/Generators/NinjaGenerator.cpp" 
+    "src/Generators/DotnetGenerator.cpp")
 target_include_directories(CentoB PRIVATE src)
 set_target_properties(CentoB PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
 set_target_properties(CentoB PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
-target_link_libraries(CentoB PRIVATE figcone wildcards_lib)
+target_link_libraries(CentoB PRIVATE figcone wildcards_lib rapidxml_lib)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(CentoB PRIVATE -fdiagnostics-color=always)

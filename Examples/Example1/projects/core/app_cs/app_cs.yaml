@@ -16,6 +16,7 @@ workspaces:
           - name: app2
             type: exec
             language: cs
+            standard: net8.0
             toolchain: dotnet
             sources: ["src/*.cs"]
             link: ["libcore"]

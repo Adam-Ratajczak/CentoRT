@@ -211,6 +211,7 @@ namespace ManifestObjects {
 				plhs.defaultProfile = MergeManifest(plhs.defaultProfile, prhs.defaultProfile);
 				plhs.type = MergeManifest(plhs.type, prhs.type);
 				plhs.language = MergeManifest(plhs.language, prhs.language);
+				plhs.standard = MergeManifest(plhs.standard, prhs.standard);
 				plhs.toolchain = MergeManifest(plhs.toolchain, prhs.toolchain);
 				plhs.link = MergeManifest(plhs.link, prhs.link);
 				plhs.sources = MergeManifest(plhs.sources, prhs.sources);
@@ -1015,6 +1016,7 @@ namespace ManifestObjects {
 			ManifestExpandVars(target.profiles);
 			target.type = ManifestExpandVars(target.vars, target.type);
 			target.language = ManifestExpandVars(target.vars, target.language);
+			target.standard = ManifestExpandVars(target.vars, target.standard);
 			target.toolchain = ManifestExpandVars(target.vars, target.toolchain);
 			target.link = ManifestExpandVars(target.vars, target.link);
 			target.sources = ManifestExpandVars(target.vars, target.sources);
@@ -1327,6 +1329,7 @@ namespace ManifestObjects {
 			DUMP("defaultProfile", target.defaultProfile);
 			DUMP("type", target.type);
 			DUMP("language", target.language);
+			DUMP("standard", target.standard);
 			DUMP("toolchain", target.toolchain);
 			DUMP("link", target.link);
 			DUMP("sources", target.sources);
