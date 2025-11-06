@@ -42,7 +42,16 @@ void RsCargoTarget::FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const
 			tasks.emplace_back(std::make_unique<GenRsBridgeIface>(bridge, sourceBridgeFile));
 		}
 	}
+	auto options = _compilerOptions;
+	options.insert(options.end(), _linkerOptions.begin(), _linkerOptions.end());
 
-	tasks.emplace_back(std::make_unique<GenCargoTask>(sources, _compilerOptions));
+	std::vector<std::string> crateType;
+	if (_type == "lib") {
+		crateType.emplace_back("staticlib");
+	}else if (_type == "dylib") {
+		crateType.emplace_back("dylib");
+	}
+	
+	tasks.emplace_back(std::make_unique<GenCargoTask>(_intDir, sources, _name, "0.1.0", _standard, crateType, options));
 	tasks.emplace_back(std::make_unique<BuildCargoTask>(_intDir, _intDir, _outDir));
 }

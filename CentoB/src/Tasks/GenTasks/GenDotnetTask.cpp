@@ -27,7 +27,7 @@ void GenDotnetTask::Dump() const {
 		std::cout << "]\n";
 		};
 
-	std::cout << _intdir << "\n";
+	std::cout << "intdir: " << _intdir << "\n";
 	std::cout << "sources: "; dumpVec(_sources);
 	std::cout << "options: "; dumpVec(_options);
 }

@@ -43,6 +43,14 @@ void GoGoTarget::FetchTasks(std::vector<std::unique_ptr<ITask>>& tasks) const {
 		}
 	}
 
-	tasks.emplace_back(std::make_unique<GenGoTask>(sources, _compilerOptions));
+	std::string buildmode;
+	if (_type == "lib") {
+		buildmode = "c-archive";
+	}
+	else if (_type == "dylib") {
+		buildmode = "c-shared";
+	}
+
+	tasks.emplace_back(std::make_unique<GenGoTask>(_intDir, sources, _name, _standard, buildmode, _compilerOptions, _linkerOptions));
 	tasks.emplace_back(std::make_unique<BuildGoTask>(_intDir, _intDir, _outDir));
 }

@@ -6,6 +6,7 @@ workspaces:
           - name: libmath
             type: dylib
             language: rs
+            standard: "2021"
             toolchain: cargo
             sources: ["src/*.rs"]
             link: []

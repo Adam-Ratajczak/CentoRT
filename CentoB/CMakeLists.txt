@@ -34,7 +34,7 @@ add_executable(CentoB
     "src/Tasks/GenTasks/GenRsBridgeImpl.cpp"
     "src/Tasks/AutomationTask.cpp"
     "src/Generators/NinjaGenerator.cpp" 
-    "src/Generators/DotnetGenerator.cpp")
+    "src/Generators/DotnetGenerator.cpp" "src/Generators/CargoGenerator.cpp" "src/Generators/GoGenerator.cpp")
 target_include_directories(CentoB PRIVATE src)
 set_target_properties(CentoB PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
 set_target_properties(CentoB PROPERTIES

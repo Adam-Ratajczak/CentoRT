@@ -6,6 +6,7 @@ workspaces:
           - name: libnet
             type: dylib
             language: go
+            standard: "1.23"
             toolchain: go
             sources: ["src/*.go"]
             link: [libmath]
