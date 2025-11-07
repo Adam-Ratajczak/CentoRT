@@ -5,7 +5,8 @@ class RuntimeObject {
 	CentoCommon::DllFile _dll;
 public:
 	RuntimeObject();
+	~RuntimeObject();
 
-	void LoadModule(size_t hash);
-	void UnloadModule(size_t hash);
+	void LoadModule(_cento_string_def* identifier);
+	void UnloadModule(_cento_string_def* identifier);
 };
