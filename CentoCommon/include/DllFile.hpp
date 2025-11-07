@@ -15,7 +15,7 @@ namespace CentoCommon {
         ~DllFile();
 
         template<typename Ret, typename... Args>
-        Ret ExecFunction(const std::string& name, Args&&... args) const {
+        Ret ExecFunction(const std::string& name, Args... args) const {
             using FuncType = Ret(*)(Args...);
             auto f = reinterpret_cast<FuncType>(GetFunction(name));
             if (!f)
