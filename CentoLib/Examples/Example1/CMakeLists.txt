@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.28)
+
+set(EXAMPLE1_RUNTIME_DIR ${CMAKE_BINARY_DIR}/bin/Example1)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXAMPLE1_RUNTIME_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${EXAMPLE1_RUNTIME_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+add_subdirectory(Lib1)
+add_subdirectory(Lib2)
+add_subdirectory(Exec)
