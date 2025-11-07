@@ -6,6 +6,6 @@ class RuntimeObject {
 public:
 	RuntimeObject();
 
-	void LoadModule(int hash);
-	void UnloadModule(int hash);
+	void LoadModule(size_t hash);
+	void UnloadModule(size_t hash);
 };
